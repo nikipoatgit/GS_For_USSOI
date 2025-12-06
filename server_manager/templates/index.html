@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nickel</title>
+    <link rel="icon" type="image/png" href="{% static 'git_profile_square.png' %}">
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #07090e;
+            color: #07090e;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        /* For Webkit-based browsers (Chrome, Safari, Edge) */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            /* Set the width of the scrollbar */
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+            /* Make the track invisible */
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            /* Tailwind's gray-600 */
+            border-radius: 8px;
+            /* Round the scrollbar handle */
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+            /* Tailwind's gray-500 */
+        }
+
+        /* For Firefox */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #4b5563 transparent;
+            /* thumb color track color */
+        }
+
+        /* Style for the video player placeholder */
+        .video-player-placeholder {
+            background: linear-gradient(45deg, #1f2937, #374151);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.75rem;
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+    <nav class="bg-gray-900/[20%] text-white px-3 pt-2 flex items-center justify-between shadow-md">
+        <div class="flex items-center space-x-8">
+            <a href="#" class="flex items-center space-x-1 text-xl font-bold hover:text-blue-400 transition-colors">
+                <img src="{% static 'git_profile_square.png' %}" alt="USSOI-GCS Logo" class="h-8 w-auto">
+                <span class="hidden sm:inline">USSOI-GCS</span> </a>
+
+            <a href="https://github.com/nikipoatgit" target="_blank" rel="noopener noreferrer"
+                class="flex items-center text-gray-500 hover:text-white transition-colors">
+                <i class="fab fa-github text-xl"></i>
+                <span class="ml-2 hidden md:inline text-sm">github/nikipoatgit</span> </a>
+        </div>
+
+        <div class="flex items-center">
+            <span class="text-sm text-gray-500 hidden md:inline">
+                Made with <i class="fas fa-heart text-red-500 mx-1"></i> by <a
+                    href="https://www.linkedin.com/in/nikhil-pore-528a4a334" class="hover:text-white transition-colors"
+                    target="_blank">nikhil</a>
+            </span>
+            <a href="#" class="ml-4 text-gray-400 hover:text-white transition-colors hidden sm:inline" title="About">
+                <i class="fas fa-info-circle text-lg"></i>
+                <span class="ml-2 hidden md:inline">About</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="flex flex-col xl:flex-row min-h-screen">
+
+        <!-- Main Content -->
+        <main id="main-content"
+            class="w-full xl:w-3/4 px-3 py-1 md:px-4 md:py-2 lg:px-6 lg:py-3 transition-all duration-300 ease-in-out">
+            <!-- Video Player -->
+            <div class="w-[96%]  mx-auto aspect-video bg-black rounded-xl shadow-2xl overflow-hidden relative group"
+                id="video-container">
+                <video id="video" class="w-full h-full" autoplay playsinline muted></video>
+                <canvas id="streamCanvas" class="w-full h-full"></canvas>
+                <span id="status" class="absolute bottom-2 left-3 text-white text-sm bg-black/50 px-2 py-1 rounded">
+                </span>
+
+
+                <!-- Video Player Controls -->
+                <div
+                    class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div class="flex items-center text-white">
+                        <button id="play-pause-btn" class="px-3"><i class="fas fa-play"></i></button>
+
+                        <div id="progress-bar"
+                            class="w-full h-1.5 bg-gray-600 rounded-full mx-3 relative cursor-pointer">
+                            <div id="progress" class="h-full bg-red-500 rounded-full" style="width: 0%;"></div>
+                            <div id="progress-handle" class="w-3 h-3 bg-white rounded-full absolute -top-1"
+                                style="left: 0%;"></div>
+                        </div>
+
+                        <span class="text-sm px-2">
+                            <span id="current-time">0:00</span>
+                        </span>
+                        <button id="GrayScale-btn" class="px-3">
+                            <i id="GrayScale-icon" class="fas fa-circle-half-stroke text-sm transition duration-300"
+                                style="
+                                background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet);
+                                background-clip: text;-webkit-background-clip: text;-webkit-text-fill-color: transparent;"></i>
+                        </button>
+                        <button id="toggle-camera-btn" class="px-3" title="Toggle Camera">
+                            <i class="fas fa-camera-rotate"></i>
+                        </button>
+                        <button id="rotate-btn" class="px-3" title="Rotate">
+                            <i class="fas fa-rotate"></i>
+                        </button>
+                        <button id="flip-btn" class="px-3" title="Flip Horizontal">
+                            <i class="fas fa-right-left"></i> </button>
+                        <button id="volume-btn" class="px-3"><i class="fas fa-volume-up"></i></button>
+                        <button id="settings-btn" class="px-3"><i class="fas fa-cog"></i></button>
+                        <button id="fullscreen-btn" class="px-3"><i class="fas fa-expand"></i></button>
+                    </div>
+                </div>
+                <div
+                    class="absolute top-4 right-4 bg-black/50 text-white px-1 py-1.5 text-xs rounded flex items-center space-x-1.5">
+                    <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    <span class="font-semibold uppercase">Live</span>
+                </div>
+
+                <div id="settings-container" class="absolute bottom-16 right-4 flex items-end space-x-2">
+
+                    <div id="quality-panel"
+                        class="flex flex-row bg-black/80 backdrop-blur-sm text-white p-4 rounded-lg w-auto space-x-4 hidden">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <h3 class="font-semibold text-md">Available best</h3>
+                            </div>
+                            <div id="camera-sections" class="space-y-3 overflow-y-auto max-h-60 custom-scrollbar py-1">
+                            </div>
+                        </div>
+                        <div class="pt-3 w-72">
+                            <div class="flex items-center justify-between py-2">
+                                <h4 class="font-medium text-sm mb-2 text-center">Streaming Settings</h4>
+                                <button id="close-quality-panel" class="text-gray-400 hover:text-white">&times;</button>
+                            </div>
+                            <div class="flex space-x-2 mb-2">
+                                <input type="number" id="custom-width" placeholder="Width"
+                                    class="w-1/2 bg-gray-700 text-sm p-1.5 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <input type="number" id="custom-height" placeholder="Height"
+                                    class="w-1/2 bg-gray-700 text-sm p-1.5 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div id="resBtnContainer" class="mb-2 py-1">
+                                <button id="resButton"
+                                    class="apply-single-btn bg-gray-700 hover:bg-gray-500 text-xs px-3 py-1.5 rounded-md">Apply</button>
+                            </div>
+                            <div class="flex items-end space-x-2 mb-2 py-1">
+                                <div class="w-3/4">
+                                    <label for="fps-input" id="fps-input-lable" class="block text-xs mb-1">FPS</label>
+                                    <input type="number" id="fps-input" value="15"
+                                        class="w-3/4 bg-gray-700 text-sm p-1.5 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none">
+                                </div>
+                                <button id="fpsButton"
+                                    class="w-1/4 apply-single-btn bg-gray-700 hover:bg-gray-500 text-xs px-3 py-1.5 rounded-md">Apply</button>
+                            </div>
+                            <div class="flex items-end mb-2 py-1">
+                                <div class="w-3/4">
+                                    <label for="bitrate-input" id="bitrate-input-lable"
+                                        class="block text-xs mb-1">Bitrate (kbps)</label>
+                                    <input type="number" id="bitrate-input"
+                                        class="w-3/4 bg-gray-700 text-sm p-1.5 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none">
+                                </div>
+                                <button id="bpsButton"
+                                    class="w-1/4 apply-single-btn bg-gray-700 hover:bg-gray-500 text-xs px-3 py-1.5 rounded-md">Apply</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="settings-panel"
+                        class="bg-black/75 backdrop-blur-sm text-white p-4 rounded-lg w-72 space-y-4 hidden">
+
+                        <div class="space-y-2 pt-2">
+                            <p class="text-sm font-medium">Video Protocol</p>
+                            <div class="flex justify-around text-sm">
+                                <span><input type="radio" id="type-stun" name="video-type" value="STUN" class="mr-1"
+                                        checked><label for="type-stun">STUN</label></span>
+                                <span><input type="radio" id="type-mse" name="video-type" value="MSE"
+                                        class="mr-1"><label for="type-mse">MSE</label></span>
+                                <span><input type="radio" id="type-turn" name="video-type" value="TURN"
+                                        class="mr-1"><label for="type-turn">TURN</label></span>
+                            </div>
+                        </div>
+
+                        <div id="turn-details" class="hidden space-y-2 pt-2 border-t border-gray-600">
+                            <h4 class="font-semibold text-center">TURN Server Details</h4>
+                            <div>
+                                <label for="turn-url" class="block text-xs mb-1">Server URL</label>
+                                <input type="text" id="turn-url" placeholder="turn:openrelay.metered.ca:80"
+                                    autocomplete="url"
+                                    class="w-full bg-gray-700 text-sm p-1.5 rounded-md border border-gray-600">
+                            </div>
+                            <div>
+                                <label for="turn-user" class="block text-xs mb-1">Username</label>
+                                <input type="text" id="turn-user" autocomplete="username"
+                                    class="w-full bg-gray-700 text-sm p-1.5 rounded-md border border-gray-600">
+                            </div>
+                            <div>
+                                <label for="turn-pass" class="block text-xs mb-1">Password</label>
+                                <input type="password" id="turn-pass" autocomplete="current-password"
+                                    class="w-full bg-gray-700 text-sm p-1.5 rounded-md border border-gray-600">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between py-2 border-t border-gray-600">
+                            <label class="text-sm font-medium">Quality</label>
+                            <button id="quality-settings-btn"
+                                class="text-sm bg-gray-600 hover:bg-gray-500 px-3 py-1 rounded-md">
+                                Configure &rarr;
+                            </button>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-600">
+                            <p class="text-sm font-medium">MAVLink</p>
+                            <div class="space-x-2">
+                                <button id="start-mavlink-btn"
+                                    class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded-md text-sm">Start</button>
+                                <button id="stop-mavlink-btn"
+                                    class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md text-sm">Stop</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-600">
+                            <p class="text-sm font-medium">Stream</p>
+                            <div class="space-x-2">
+                                <button id="start-stream-btn">Start</button>
+                                <button id="stop-stream-btn">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- device status -->
+            <div class="w-[96%] mx-auto mt-4 bg-gray-800/[10%] px-4 py-2 rounded-xl">
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm">
+
+                    <div class="flex items-center" title="Battery">
+                        <i class="fas fa-battery-three-quarters w-5 text-center text-green-400"></i>
+                        <span id="status-battery" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-gray-400">%</span>
+                    </div>
+
+                    <div class="flex items-center" title="Temperature">
+                        <i class="fas fa-thermometer-half w-5 text-center text-red-400"></i>
+                        <span id="status-temp" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-gray-400">°C</span>
+                    </div>
+
+                    <div class="flex items-center" title="Current">
+                        <i class="fas fa-bolt w-5 text-center text-yellow-400"></i>
+                        <span id="status-current" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-gray-400 ml-1">mA</span>
+                    </div>
+
+                    <div class="h-4 w-px bg-gray-700"></div>
+
+                    <div class="flex items-center" title="Network">
+                        <i class="fas fa-signal w-5 text-center text-blue-400"></i>
+                        <span id="status-sim" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-xs bg-gray-700 text-gray-300 font-bold px-1.5 py-0.5 rounded ml-1"
+                            id="status-net-type">--</span>
+                    </div>
+
+                    <div class="flex items-center" title="Signal Strength">
+                        <i class="fas fa-satellite-dish w-5 text-center text-purple-400"></i>
+                        <span id="status-signal" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-gray-400 ml-1">dBm</span>
+                    </div>
+
+                    <div class="h-4 w-px bg-gray-700"></div>
+
+                    <div class="flex items-center" title="Upload/Download Speed">
+                        <i class="fas fa-exchange-alt w-5 text-center text-gray-400"></i>
+                        <div class="ml-1.5 flex items-center font-semibold text-white">
+                            <i class="fas fa-arrow-up text-xs mr-1"></i><span id="status-upload">--</span>
+                            <span class="mx-1.5 text-gray-600">/</span>
+                            <i class="fas fa-arrow-down text-xs mr-1"></i><span id="status-download">--</span>
+                        </div>
+                        <span class="text-gray-400 ml-1">KBps</span>
+                    </div>
+
+                    <div class="flex items-center" title="Total Data Usage">
+                        <i class="fas fa-database w-5 text-center text-teal-400"></i>
+                        <span id="status-data-total" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-gray-400 ml-1">MB</span>
+                    </div>
+
+                </div>
+
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3 pt-3 border-t border-gray-700/50 text-sm">
+
+                    <div class="flex items-center" title="GPS Coordinates">
+                        <i class="fas fa-map-marker-alt w-5 text-center text-gray-400"></i>
+                        <span id="status-gps" class="ml-1.5 font-mono text-gray-300 text-base font-semibold">--</span>
+                    </div>
+
+                    <div class="h-4 w-px bg-gray-700 hidden sm:block"></div>
+
+                    <div class="flex items-center text-xs" title="Altitude">
+                        <i class="fas fa-mountain w-4 text-center text-gray-400"></i>
+                        <span id="status-altitude"
+                            class="ml-1.5 font-mono text-gray-300 text-base font-semibold">--</span>
+                        <span class="text-gray-500 ml-1 text-base font-semibold">m</span>
+                    </div>
+
+                    <div class="flex items-center text-xs" title="Accuracy">
+                        <i class="fas fa-bullseye w-4 text-center text-gray-400"></i>
+                        <span id="status-accuracy"
+                            class="ml-1.5 font-mono text-gray-300 text-base font-semibold">--</span>
+                        <span class="text-gray-500 ml-1 text-base font-semibold">m</span>
+                    </div>
+
+                    <div class="flex items-center text-xs" title="Speed">
+                        <i class="fas fa-tachometer-alt w-4 text-center text-gray-400"></i>
+                        <span id="status-speed" class="ml-1.5 font-mono text-gray-300 text-base font-semibold">--</span>
+                        <span class="text-gray-500 ml-1 text-base font-semibold">km/h</span>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- Sidebar for logs  -->
+        <aside id="log-sidebar"
+            class="relative w-full xl:w-1/4 px-3 py-1 md:px-4 md:py-2 lg:px-6 lg:py-3 lg:h-screen lg:overflow-y-auto transition-all duration-300 ease-in-out">
+
+            <button id="toggle-sidebar-btn"
+                class="absolute top-3 right-3 text-gray-400 hover:text-white bg-gray-800/50 rounded-md p-1">
+                <svg id="collapse-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+                <svg id="expand-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+            </button>
+            <div id="sidebar-content">
+                <h2 class="text-xl font-bold text-white mb-4">Log</h2>
+                <div class="space-y-4" id="log-container">
+                </div>
+            </div>
+        </aside>
+    </div>
+    <div class="fixed bottom-4 right-4 z-50 flex flex-col items-end space-y-2">
+        <div id="mini-map" class="w-120 h-90 rounded-lg overflow-hidden border border-gray-700 shadow-2xl hidden"></div>
+        <button id="map-toggle-btn"
+            class="bg-black/10 text-white p-2.5 rounded-full shadow-lg hover:bg-black/80 transition-all"
+            title="Toggle Mini Map">
+            <i class="fas fa-map-marked-alt text-lg"></i>
+        </button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="text/javascript" src="{% static 'js/main.js' %}"></script>
+
+
+</body>
+
+</html>

@@ -18,11 +18,13 @@ from django.http import HttpResponse
 from django.contrib import admin
 from django.urls import path
 from core.telemetry import telemetryWebSocketConnector
-from core.streaming import *
+from core.controlapi import *
+from core.mseFmp4 import *
 
 urlpatterns = [
     path("telemetry", telemetryWebSocketConnector.as_asgi()),
-    path("streaming", streamingWebSocketConnector.as_asgi()),
-    path("streaming/api/data", dataExchangeWebSocketConnector.as_asgi()),
-    path("control/api",controlApiWebSocketConnector.as_asgi())
+    path("control/js", jsWsConnector.as_asgi()),
+    path("control",clientWsConnector.as_asgi()),
+    path('mseFmp4', streamingFmp4WebsocketConnector.as_asgi()),
+    path('mseFmp4/js',streamingFmp4WebsocketConnectorJS.as_asgi())
 ]
