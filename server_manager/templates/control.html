@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nickel</title>
+    <link rel="icon" type="image/png" href="{% static 'git_profile_square.png' %}">
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #07090e;
+            color: #07090e;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        /* For Webkit-based browsers (Chrome, Safari, Edge) */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            /* Set the width of the scrollbar */
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+            /* Make the track invisible */
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            /* Tailwind's gray-600 */
+            border-radius: 8px;
+            /* Round the scrollbar handle */
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+            /* Tailwind's gray-500 */
+        }
+
+        /* For Firefox */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #4b5563 transparent;
+            /* thumb color track color */
+        }
+
+        /* Style for the video player placeholder */
+        .video-player-placeholder {
+            background: linear-gradient(45deg, #1f2937, #374151);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.75rem;
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <!-- Nav Bar -->
+    <nav class="bg-gray-900/[20%] text-white px-3 pt-2 flex items-center justify-between shadow-md relative z-50">
+        <div class="flex items-center space-x-8">
+            <a href="#" class="flex items-center space-x-1 text-xl font-bold hover:text-blue-400 transition-colors">
+                <img src="{% static 'git_profile_square.png' %}" alt="USSOI-GCS Logo" class="h-8 w-auto">
+                <span class="hidden sm:inline">USSOI-GCS</span> </a>
+
+            <a href="https://github.com/nikipoatgit" target="_blank" rel="noopener noreferrer"
+                class="flex items-center text-gray-500 hover:text-white transition-colors">
+                <i class="fab fa-github text-xl"></i>
+                <span class="ml-2 hidden md:inline text-sm">github/nikipoatgit</span> </a>
+        </div>
+
+        <div class="flex items-center">
+            <a href="#" id="about-btn"
+                class="ml-4 text-gray-400 hover:text-white transition-colors hidden sm:inline" title="About">
+                <i class="fas fa-info-circle text-lg"></i>
+                <span class="ml-2 hidden md:inline">About</span>
+            </a>
+            <a href="#" id="open-about-btn"
+                class="ml-4 text-gray-400 hover:text-white transition-colors hidden sm:inline" title="AboutClient">
+                <i class="fas fa-info-circle text-lg"></i>
+                <span class="ml-2 hidden md:inline">Client Details</span>
+            </a>
+            <form action="/logout/" method="post" class="ml-4">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-1.5 text-sm font-medium text-gray-300
+               border border-gray-600 rounded-md
+               hover:bg-gray-800 hover:text-white
+               transition">
+                    Logout
+                </button>
+            </form>
+
+        </div>
+
+    </nav>
+
+    <!-- Control Container -->
+    <div class="flex flex-col xl:flex-row min-h-screen">
+
+        <!-- Main Content -->
+        <main id="main-content"
+            class="w-full xl:w-3/4 px-3 py-1 md:px-4 md:py-2 lg:px-6 lg:py-3 transition-all duration-300 ease-in-out">
+            <!-- Video Player -->
+            <div class="w-[96%]  mx-auto aspect-video bg-black rounded-xl shadow-2xl overflow-hidden relative group"
+                id="video-container">
+                <video id="video" class="w-full h-full" autoplay playsinline muted></video>
+                <span id="status" class="absolute bottom-2 left-3 text-white text-sm bg-black/50 px-2 py-1 rounded">
+                </span>
+
+                <!-- Video Player Controls -->
+                <div
+                    class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div class="flex items-center text-white">
+                        <button id="play-pause-btn" class="px-3"><i class="fas fa-play"></i></button>
+
+                        <div id="progress-bar"
+                            class="w-full h-1.5 bg-gray-600 rounded-full mx-3 relative cursor-pointer">
+                            <div id="progress" class="h-full bg-red-500 rounded-full" style="width: 0%;"></div>
+                            <div id="progress-handle" class="w-3 h-3 bg-white rounded-full absolute -top-1"
+                                style="left: 0%;"></div>
+                        </div>
+
+                        <span class="text-sm px-2">
+                            <span id="current-time">0:00</span>
+                        </span>
+                        <button id="toggle-camera-btn" class="px-3" title="Toggle Camera">
+                            <i class="fas fa-camera-rotate"></i>
+                        </button>
+                        <button id="rotate-btn" class="px-3" title="Rotate">
+                            <i class="fas fa-rotate"></i>
+                        </button>
+                        <button id="flip-btn" class="px-3" title="Flip Horizontal">
+                            <i class="fas fa-right-left"></i> </button>
+                        <button id="volume-btn" class="px-3"><i class="fas fa-volume-up"></i></button>
+                        <button id="settings-btn" class="px-3"><i class="fas fa-cog"></i></button>
+                        <button id="fullscreen-btn" class="px-3"><i class="fas fa-expand"></i></button>
+                    </div>
+                </div>
+
+                <!-- live indicator -->
+                <div class="absolute top-4 right-4 flex space-x-4">
+                    <div id="stat-device"
+                        class="text-gray-500 flex items-center space-x-1.5 transition-colors duration-500">
+                        <span class="indicator-dot w-2 h-2 bg-gray-500 rounded-full"></span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Device</span>
+                    </div>
+
+                    <div id="stat-stream"
+                        class="text-gray-500 flex items-center space-x-1.5 transition-colors duration-500">
+                        <span class="indicator-dot w-2 h-2 bg-gray-500 rounded-full"></span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Stream</span>
+                    </div>
+
+                    <div id="stat-record"
+                        class="text-gray-500 flex items-center space-x-1.5 transition-colors duration-500">
+                        <span class="indicator-dot w-2 h-2 bg-gray-500 rounded-full"></span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Record</span>
+                    </div>
+                    <div id="stat-tunnel"
+                        class="text-gray-500 flex items-center space-x-1.5 transition-colors duration-500">
+                        <span class="indicator-dot w-2 h-2 bg-gray-500 rounded-full"></span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Tunnel</span>
+                    </div>
+                </div>
+
+                <!-- settings container -->
+                <div id="settings-container" class="absolute bottom-16 right-4 flex items-end space-x-2">
+
+                    <div id="quality-panel" class="flex flex-row
+            bg-black/35 backdrop-blur-sm text-gray-200
+            p-3 rounded-lg w-auto space-x-4
+            border border-gray-700/40 shadow-md hidden">
+
+                        <!-- Left: Camera list -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-xs font-medium text-gray-400">Available best</h3>
+                            </div>
+
+                            <div id="camera-sections" class="space-y-2 overflow-y-auto max-h-52 custom-scrollbar py-1">
+                            </div>
+                        </div>
+
+                        <!-- Right: Streaming settings -->
+                        <div class="pt-2 w-60">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-xs font-medium text-gray-400">Streaming Settings</h4>
+                                <div id="mode-slider-container">
+                                    <label id="mode-slider"
+                                        class="relative inline-flex items-center cursor-pointer hidden">
+                                        <input type="checkbox" class="sr-only peer">
+                                        <div class="w-9 h-5 rounded-full
+                                        border border-gray-500
+                                        bg-transparent
+                                        transition-all
+                                        peer-checked:border-gray-300
+                                        after:content-['']
+                                        after:absolute after:top-0.5 after:left-0.5
+                                        after:h-4 after:w-4
+                                        after:rounded-full
+                                        after:bg-gray-400
+                                        after:transition-all
+                                        peer-checked:after:translate-x-4
+                                        peer-checked:after:bg-gray-200">
+                                        </div>
+
+                                    </label>
+                                </div>
+
+                                <button id="close-quality-panel" class="text-gray-400 hover:text-gray-200
+                                            text-lg leading-none
+                                            px-2 py-1">
+                                    &times;
+                                </button>
+
+                            </div>
+
+                            <div class="flex items-end space-x-2 mb-2">
+                                <div class="w-3/4">
+                                    <label for="fps-input" class="block text-xs text-gray-400 mb-1">
+                                        Resolution
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="flex space-x-2 mb-2">
+
+                                <input type="number" id="custom-width" placeholder="Width" class="w-1/2 bg-gray-800/60 text-xs p-1 rounded-md
+                          border border-gray-700/40 outline-none">
+
+                                <input type="number" id="custom-height" placeholder="Height" class="w-1/2 bg-gray-800/60 text-xs p-1 rounded-md
+                          border border-gray-700/40 outline-none">
+                            </div>
+
+                            <div class="pt-2 flex items-end space-x-2 mb-2">
+                                <div class="w-3/4">
+                                    <label for="fps-input" class="block text-xs text-gray-400 mb-1">
+                                        FPS
+                                    </label>
+                                    <input type="number" id="fps-input" value="30" class="w-full bg-gray-800/60 text-xs p-1 rounded-md
+                              border border-gray-700/40 outline-none">
+                                </div>
+
+                                <button id="resButton" class="w-1/4 text-xs px-2 py-1 rounded-md
+                           bg-gray-800/60 hover:bg-gray-700/60
+                           text-gray-300 transition-colors">
+                                    Apply
+                                </button>
+                            </div>
+
+                            <div class="pt-2 flex items-end space-x-2 mb-2">
+                                <div class="w-3/4">
+                                    <label for="bitrate-input" class="block text-xs text-gray-400 mb-1">
+                                        Bitrate-KBps
+                                    </label>
+                                    <input type="number" id="bitrate-input" value="100" class="w-full bg-gray-800/60 text-xs p-1 rounded-md
+                              border border-gray-700/40 outline-none">
+                                </div>
+
+
+                                <button id="bpsButton" class="w-1/4 text-xs px-2 py-1 rounded-md
+                           bg-gray-800/60 hover:bg-gray-700/60
+                           text-gray-300 transition-colors">
+                                    Apply
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div id="settings-panel" class="bg-black/35 backdrop-blur-sm text-gray-200
+            p-3 rounded-lg w-60 space-y-3
+            border border-gray-700/40 shadow-md hidden">
+                        <!-- change setup  -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex gap-1.5">
+                                <button id="change-setup-btn" class="text-xs px-3 py-1 rounded-md
+           bg-gray-800/60 hover:bg-gray-700/60
+           text-gray-300 transition-colors">
+                                    Change Setup(Stream Mode)
+                                </button>
+                            </div>
+                        </div>
+
+
+                        <!-- Quality -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-medium text-gray-400">Quality</span>
+                            <button id="quality-settings-btn" class="text-xs px-3 py-1 rounded-md
+                       bg-gray-800/60 hover:bg-gray-700/60
+                       text-gray-300 transition-colors">
+                                Configure →
+                            </button>
+                        </div>
+
+                        <div class="border-t border-gray-700/40"></div>
+
+
+                        <!-- Recording -->
+                        <div>
+                            <p class="text-xs font-medium text-gray-400 mb-1.5">Recording</p>
+                            <div class="flex gap-1.5">
+                                <button id="start-recording-btn" class="flex-1 px-2 py-1 rounded-md text-xs
+                       bg-gray-800/60 hover:bg-gray-700/60
+                       text-gray-300 hover:text-green-400
+                       transition-colors">
+                                    Start Local Recording
+                                </button>
+                            </div>
+                        </div>
+
+
+                        <!-- Tunnel -->
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <p class="text-xs font-medium text-gray-400">Tunnel</p>
+                                <span id="tunnel-icon" class="flex items-center"></span>
+                            </div>
+
+
+                            <div class="flex gap-1.5">
+                                <button id="start-mavlink-btn" class="flex-1 px-2 py-1 rounded-md text-xs
+                           bg-gray-800/60 hover:bg-gray-700/60
+                           text-gray-300 hover:text-green-400
+                           transition-colors">
+                                    Start
+                                </button>
+                                <button id="stop-mavlink-btn" class="flex-1 px-2 py-1 rounded-md text-xs
+                           bg-gray-800/60 hover:bg-gray-700/60
+                           text-gray-300 hover:text-red-400
+                           transition-colors">
+                                    Stop
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-700/40"></div>
+
+                        <!-- Stream -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <p class="text-xs font-medium text-gray-400">Stream</p>
+                                <span id="stream-icon" class="flex items-center"></span>
+                            </div>
+
+                            <div class="flex gap-1.5">
+                                <button id="start-stream-btn" class="flex-1 px-2 py-1 rounded-md text-xs
+                           bg-gray-800/60 hover:bg-gray-700/60
+                           text-gray-300 hover:text-green-400
+                           transition-colors">
+                                    Start
+                                </button>
+                                <button id="stop-stream-btn" class="flex-1 px-2 py-1 rounded-md text-xs
+                           bg-gray-800/60 hover:bg-gray-700/60
+                           text-gray-300 hover:text-red-400
+                           transition-colors">
+                                    Stop
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- device status -->
+            <div class="w-[96%] mx-auto mt-4 bg-gray-800/[10%] px-4 py-2 rounded-xl">
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm">
+
+                    <div class="flex items-center" title="Battery">
+                        <i class="fas fa-battery-three-quarters w-5 text-center text-green-400"></i>
+                        <span id="status-battery" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-gray-400">%</span>
+                    </div>
+
+                    <div class="flex items-center" title="Temperature">
+                        <i class="fas fa-thermometer-half w-5 text-center text-red-400"></i>
+                        <span id="status-temp" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-gray-400">°C</span>
+                    </div>
+
+                    <div class="flex items-center" title="Current">
+                        <i class="fas fa-bolt w-5 text-center text-yellow-400"></i>
+                        <span id="status-current" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-gray-400 ml-1">mA</span>
+                    </div>
+
+                    <div class="h-4 w-px bg-gray-700"></div>
+
+                    <div class="flex items-center" title="Network">
+                        <div id="signal-bars" class="flex items-end gap-[2px] w-5 h-4">
+                            <span class="w-[3px] h-1 bg-white/30 rounded"></span>
+                            <span class="w-[3px] h-2 bg-white/30 rounded"></span>
+                            <span class="w-[3px] h-3 bg-white/30 rounded"></span>
+                            <span class="w-[3px] h-4 bg-white/30 rounded"></span>
+                        </div>
+
+                        <span class="text-xs bg-gray-700 text-gray-300 font-bold px-1.5 py-0.5 rounded ml-1"
+                            id="status-net-type"></span>
+
+                        <span id="status-signal" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-gray-400 ml-1">dBm</span>
+                    </div>
+
+                    <div class="h-4 w-px bg-gray-700"></div>
+
+                    <div class="flex items-center" title="Wi-Fi">
+
+                        <div class="relative w-6 h-6">
+                            <svg id="wifi-icon" class="w-full h-full" viewBox="0 0 24 24" fill="currentColor">
+
+                                <path class="wifi-bar text-white/30" transform="translate(0, -2)"
+                                    d="M21.192 8.808a13 13 0 00-18.384 0l1.414 1.414a11 11 0 0115.556 0l1.414-1.414z" />
+
+                                <path class="wifi-bar text-white/30" transform="translate(0, -2)"
+                                    d="M18.364 11.636a9 9 0 00-12.728 0l1.414 1.414a7 7 0 019.9 0l1.414-1.414z" />
+
+                                <path class="wifi-bar text-white/30" transform="translate(0, -2.3)"
+                                    d="M15.536 14.464a5 5 0 00-7.072 0l1.414 1.414a3 3 0 014.242 0l1.414-1.414z" />
+
+                                <circle class="wifi-bar text-white/30" cx="12" cy="15" r="1.25" />
+
+                            </svg>
+                        </div>
+
+
+                        <span id="wifi-status-signal" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-gray-400 ml-1">dBm</span>
+                    </div>
+
+
+                    <div class="h-4 w-px bg-gray-700"></div>
+
+                    <div class="flex items-center" title="Upload/Download Speed">
+                        <i class="fas fa-exchange-alt w-5 text-center text-gray-400"></i>
+                        <div class="ml-1.5 flex items-center font-semibold text-white">
+                            <i class="fas fa-arrow-up text-xs mr-1"></i><span id="status-upload">--</span>
+                            <span class="mx-1.5 text-gray-600">/</span>
+                            <i class="fas fa-arrow-down text-xs mr-1"></i><span id="status-download">--</span>
+                        </div>
+                        <span class="text-gray-400 ml-1">KBps</span>
+                    </div>
+
+                    <div class="flex items-center" title="Total Data Usage">
+                        <i class="fas fa-database w-5 text-center text-teal-400"></i>
+                        <span id="status-data-total" class="ml-1.5 font-semibold text-white">--</span>
+                        <span class="text-gray-400 ml-1">MB</span>
+                    </div>
+
+                </div>
+
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3 pt-3 border-t border-gray-700/50 text-sm">
+
+                    <div class="flex items-center" title="GPS Coordinates">
+                        <i class="fas fa-map-marker-alt w-5 text-center text-gray-400"></i>
+                        <span id="status-gps" class="ml-1.5 font-mono text-gray-300 text-base font-semibold">--</span>
+                    </div>
+
+                    <div class="h-4 w-px bg-gray-700 hidden sm:block"></div>
+
+                    <div class="flex items-center text-xs" title="Altitude">
+                        <i class="fas fa-mountain w-4 text-center text-gray-400"></i>
+                        <span id="status-altitude"
+                            class="ml-1.5 font-mono text-gray-300 text-base font-semibold">--</span>
+                        <span class="text-gray-500 ml-1 text-base font-semibold">m</span>
+                    </div>
+
+                    <div class="flex items-center text-xs" title="Accuracy">
+                        <i class="fas fa-bullseye w-4 text-center text-gray-400"></i>
+                        <span id="status-accuracy"
+                            class="ml-1.5 font-mono text-gray-300 text-base font-semibold">--</span>
+                        <span class="text-gray-500 ml-1 text-base font-semibold">m</span>
+                    </div>
+
+                    <div class="flex items-center text-xs" title="Speed">
+                        <i class="fas fa-tachometer-alt w-4 text-center text-gray-400"></i>
+                        <span id="status-speed" class="ml-1.5 font-mono text-gray-300 text-base font-semibold">--</span>
+                        <span class="text-gray-500 ml-1 text-base font-semibold">km/h</span>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- Sidebar for logs  -->
+        <aside id="log-sidebar"
+            class="relative w-full xl:w-1/4 px-3 py-1 md:px-4 md:py-2 lg:px-6 lg:py-3 lg:h-screen lg:overflow-y-auto transition-all duration-300 ease-in-out">
+
+            <button id="toggle-sidebar-btn"
+                class="absolute top-3 right-3 text-gray-400 hover:text-white bg-gray-800/50 rounded-md p-1">
+                <svg id="collapse-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+                <svg id="expand-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+            </button>
+            <div id="sidebar-content">
+                <h2 class="text-xl font-bold text-white mb-4">Log</h2>
+                <div class="space-y-4" id="log-container">
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Mini MAp  -->
+    <div class="fixed bottom-4 right-4 z-50 flex flex-col items-end space-y-2">
+        <div id="mini-map" class="w-120 h-90 rounded-lg overflow-hidden border border-gray-700 shadow-2xl hidden"></div>
+        <button id="map-toggle-btn"
+            class="bg-black/10 text-white p-2.5 rounded-full shadow-lg hover:bg-black/80 transition-all"
+            title="Toggle Mini Map">
+            <i class="fas fa-map-marked-alt text-lg"></i>
+        </button>
+    </div>
+
+    <!-- Client Config Overlay -->
+    <div id="client-config-overlay"
+        class="fixed inset-0 bg-black/75 backdrop-blur-md hidden z-50 flex items-center justify-center">
+
+        <div class="bg-black/85 backdrop-blur-lg border border-gray-700
+                text-white rounded-2xl w-full max-w-xl p-6 space-y-5 shadow-2xl" onclick="event.stopPropagation()">
+
+            <!-- Header -->
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-semibold">Client Configuration</h2>
+                <button onclick="closeClientConfig()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+            </div>
+
+            <!-- Modes -->
+            <div class="grid grid-cols-2 gap-4">
+                <label class="flex gap-2 items-center">
+                    <input id="cfg-webrtc" type="checkbox" checked class="accent-blue-500"
+                        onchange="handleModeChange(event)">
+                    WebRTC
+                </label>
+
+                <label class="flex gap-2 items-center">
+                    <input id="cfg-mse" type="checkbox" class="accent-blue-500" onchange="handleModeChange(event)">
+                    MSE
+                </label>
+
+                <label class="flex gap-2 items-center col-span-2">
+                    <input id="cfg-local" type="checkbox" class="accent-blue-500" onchange="handleModeChange(event)">
+                    Local Recording
+                </label>
+                <div id="local-bitrate-wrapper">
+                    <label class="text-sm">Recording Bitrate (KBps)</label>
+                    <input id="cfg-local-bitrate" type="number" min="100" step="100" value="500"
+                        class="w-full mt-1 bg-gray-800 border border-gray-700 rounded px-3 py-1.5">
+                </div>
+
+                <div>
+                    <label class="text-sm">Baudrate</label>
+                    <input id="cfg-baud" type="number" value="115200"
+                        class="w-full mt-1 bg-gray-800 border border-gray-700 rounded px-3 py-1.5">
+                </div>
+
+            </div>
+
+            <p id="local-note" class="text-xs text-yellow-400 hidden">
+                Resolution, camera, rotaton are locked during recording.
+            </p>
+            
+
+            <!-- TURN -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-sm font-medium">TURN Servers</p>
+                    <button id="add-turn-btn" onclick="addTurnRow()"
+                        class="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600">
+                        + Add
+                    </button>
+                </div>
+
+                <div id="turn-list" class="space-y-2"></div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end pt-3">
+                <button onclick="sendClientConfig()" class="px-6 py-1.5 bg-blue-600 rounded-md hover:bg-blue-700">
+                    Update
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- about overlay -->
+    <div id="about-overlay"
+        class="fixed left-0 right-0 bottom-0 top-14 bg-[#07090e] z-40 hidden overflow-y-auto custom-scrollbar pt-6 transition-all duration-300">
+        <div class="container mx-auto px-4 pb-10 max-w-7xl">
+
+            <div class="mb-8 border-b border-gray-800 pb-4">
+                <h1 class="text-3xl font-bold text-white">System Information</h1>
+                <p id="header-device-name" class="text-gray-500 mt-1 font-mono text-sm">Loading Device Data...</p>
+            </div>
+
+            <div id="device-info-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="text/javascript" src="{% static 'js/jmuxer.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/main.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/ServerInit.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/toastMessage.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/logs.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/mapOverlay.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/Streaming.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/websocket.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/about.js' %}"></script>
+
+</body>
+
+</html>

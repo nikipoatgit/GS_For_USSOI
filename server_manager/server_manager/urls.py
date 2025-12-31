@@ -17,8 +17,12 @@ Including another URLconf
 from django.http import HttpResponse
 from django.contrib import admin
 from django.urls import path
-from .views import stream_page
+from core.views import *
+from .views import *
 
 urlpatterns = [
-    path("", stream_page, name="stream_page"),
+    path("", login_and_config),
+    path("logout/", logout_view),
+    path("authentication/", authentication),
+    path("control/", control),
 ]

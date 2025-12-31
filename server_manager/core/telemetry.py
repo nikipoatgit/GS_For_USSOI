@@ -18,7 +18,7 @@ class telemetryWebSocketConnector(AsyncWebsocketConsumer):
 
         try:
             while True:
-                data = await reader.read(4096)
+                data = await reader.read(8192)
                 if not data:
                     break
                 living_clients = list(cls.connected_websockets)

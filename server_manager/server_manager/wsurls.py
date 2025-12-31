@@ -22,9 +22,9 @@ from core.controlapi import *
 from core.mseFmp4 import *
 
 urlpatterns = [
-    path("telemetry", telemetryWebSocketConnector.as_asgi()),
     path("control/js", jsWsConnector.as_asgi()),
-    path("control",clientWsConnector.as_asgi()),
-    path('mseFmp4', streamingFmp4WebsocketConnector.as_asgi()),
-    path('mseFmp4/js',streamingFmp4WebsocketConnectorJS.as_asgi())
+    path("control/client",clientWsConnector.as_asgi()),
+    path("uartunnel", telemetryWebSocketConnector.as_asgi()),
+    path('mse/client', streamingFmp4WebsocketConnector.as_asgi()),
+    path('mse/js',streamingFmp4WebsocketConnectorJS.as_asgi())
 ]

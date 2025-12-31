@@ -36,7 +36,7 @@ class clientWsConnector(AsyncWebsocketConsumer):
             GROUP2,
             {
                 "type":"sendPayload",
-                "data": "{\"type\":\"1\",\"s\":\"Connected\",\"t\":\"1\"}" 
+                "data": "{\"type\":\"clientStatus\",\"s\":\"Connected\",\"t\":\"1\"}" 
             }
         )
         await self.accept()
@@ -48,7 +48,7 @@ class clientWsConnector(AsyncWebsocketConsumer):
             GROUP2,
             {
                 "type":"sendPayload",
-                "data": "{\"type\":\"1\",\"s\":\"Not Connected\",\"t\":\"0\"}" 
+                "data": "{\"type\":\"clientStatus\",\"s\":\"Not Connected\",\"t\":\"0\"}" 
             }
         )
 
