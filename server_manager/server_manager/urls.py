@@ -18,7 +18,6 @@ from django.http import HttpResponse
 from django.contrib import admin
 from django.urls import path
 from core.views import *
-from .views import *
 
 urlpatterns = [
     path("", login_and_config),

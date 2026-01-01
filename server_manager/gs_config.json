@@ -1,0 +1,20 @@
+{
+    "host": "127.0.0.1",
+    "port": 8000,
+    "TCP_host": "127.0.0.1",
+    "TCP_port": 8001,
+    "debug": false,
+    "roomId": "nikipo",
+    "roomPwd": "nikipo",
+    "adminUsername": "pbkdf2_sha256$870000$ucTAmXT8KtbHEPjxGU0eUo$yH87FOXhxRWTeN9hTwe9zX84tiQy5EomG5YCXngXeho=",
+    "adminPassword": "pbkdf2_sha256$870000$ucTAmXT8KtbHEPjxGU0eUo$yH87FOXhxRWTeN9hTwe9zX84tiQy5EomG5YCXngXeho=",
+    "secret_key": "EL4wecw9NeyGDbxSUuvsy0J5Qh5Eh0eQ-aXHDDzbXc6IAVqsCEgxQz4C1OQZ8NXpQ-4",
+    "allowed_hosts": [
+        "*"
+    ],
+    "session_cookie_secure": true,
+    "csrf_cookie_secure": true,
+    "csrf_trusted_origins": [],
+    "secure_proxy_ssl_header": null,
+    "use_x_forwarded_host": false
+}

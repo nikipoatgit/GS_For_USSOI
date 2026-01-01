@@ -1,49 +1,96 @@
+import json
+import os
 import asyncio
+from django.conf import settings
 from channels.generic.websocket import AsyncWebsocketConsumer
 
-TCP_HOST = "127.0.0.1"
-TCP_PORT = 9000  # port on which mission planner will connect  
+def get_tcp_config():
+    """
+    Reads the TCP Host and Port from gs_config.json.
+    Falls back to defaults if file is missing.
+    """
+    # default fallback values
+    host = "127.0.0.1"
+    port = 9000 
+
+    try:
+        # Try to find file next to EXE (EXTERNAL_DIR)
+        config_path = os.path.join(settings.EXTERNAL_DIR, 'gs_config.json')
+    except AttributeError:
+        # Fallback for dev mode (BASE_DIR)
+        config_path = os.path.join(settings.BASE_DIR, 'gs_config.json')
+
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, 'r') as f:
+                data = json.load(f)
+                # Fetch keys: "TCP_host" and "TCP_port"
+                host = data.get("TCP_host", host)
+                port = data.get("TCP_port", port)
+        except Exception as e:
+            print(f"[!] Error reading config for TCP: {e}")
+
+    return host, port
 
 class telemetryWebSocketConnector(AsyncWebsocketConsumer):
     tcp_server = None
     mission_planner_writer = None
     connected_websockets = set()
 
+    active_ws = None
+    lock = asyncio.Lock()
+    tcp_lock = asyncio.Lock()
+
     @classmethod
     async def handle_tcp_connection(cls, reader, writer):
-
         peername = writer.get_extra_info('peername')
-        print(f"Mission Planner connected from {peername}")
+
+        # FCFS: reject if already occupied
+        if cls.mission_planner_writer is not None:
+            print(f"Rejected TCP client {peername} (slot occupied)")
+            writer.close()
+            await writer.wait_closed()
+            return
+
+        print(f"Mission Planner accepted from {peername}")
         cls.mission_planner_writer = writer
 
         try:
             while True:
-                data = await reader.read(8192)
+                data = await asyncio.wait_for(reader.read(8192), timeout=15)
                 if not data:
                     break
-                living_clients = list(cls.connected_websockets)
-                for ws_client in living_clients:
-                    try:
-                        await ws_client.send(bytes_data=data)
-                    except Exception as e:
-                        print(f"Could not send to a disconnected WebSocket. Removing it. Error: {e}")
-                        cls.connected_websockets.remove(ws_client)
 
-        except ConnectionResetError:
-            print("Mission Planner connection was forcibly closed.")
+                for ws in list(cls.connected_websockets):
+                    try:
+                        await ws.send(bytes_data=data)
+                    except Exception:
+                        cls.connected_websockets.discard(ws)
+
+        except asyncio.TimeoutError:  
+            print("TCP timeout")                 
+
         except Exception as e:
-            print(f"TCP connection error: {e}")
+            print(f"TCP error: {e}")
+
         finally:
-            print("Mission Planner disconnected.")
+            print("Mission Planner disconnected")
             cls.mission_planner_writer = None
             writer.close()
             await writer.wait_closed()
 
+
     async def connect(self):
+        async with self.lock:
+            if telemetryWebSocketConnector.active_ws is not None:
+                await self.close(code=4001)  
+                return
+            telemetryWebSocketConnector.active_ws = self
         await self.accept()
         print("WebSocket connected")
         telemetryWebSocketConnector.connected_websockets.add(self)
         if telemetryWebSocketConnector.tcp_server is None:
+            TCP_HOST, TCP_PORT = get_tcp_config()
             try:
                 print(f"Starting TCP server on {TCP_HOST}:{TCP_PORT}...")
                 server = await asyncio.start_server(
@@ -56,9 +103,15 @@ class telemetryWebSocketConnector(AsyncWebsocketConsumer):
         else:
             print("TCP server is already running.")
 
+
+
     async def disconnect(self, close_code):
+        async with self.lock:
+            if telemetryWebSocketConnector.active_ws is self:
+                telemetryWebSocketConnector.active_ws = None
         print("WebSocket disconnected")
-        telemetryWebSocketConnector.connected_websockets.remove(self)
+        telemetryWebSocketConnector.connected_websockets.discard(self)
+
 
     async def receive(self, text_data=None, bytes_data=None):
         """

@@ -3,83 +3,115 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
 </head>
 
-<body class="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-200 font-sans antialiased selection:bg-white selection:text-black">
+<body class="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-200">
 
-    <form method="post" class="w-full max-w-sm">
-        
-        {% csrf_token %}
+<form method="post" class="w-full max-w-sm"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false">
+    {% csrf_token %}
 
-        <div class="bg-neutral-900/50 border border-neutral-800 rounded-lg p-8">
-            
-            <div class="mb-8 text-center space-y-2">
-                <h2 class="text-2xl font-bold tracking-tight text-white">
-                    System Access
-                </h2>
-                <p class="text-xs text-neutral-500 uppercase tracking-widest">
-                    Admin & Configuration
-                </p>
-            </div>
+    <div class="border border-neutral-800 rounded p-6 bg-neutral-950">
 
-            <div class="space-y-6">
-                
-                <div class="space-y-3">
-                    <label class="text-[10px] font-bold text-neutral-500 uppercase ml-1">Admin Credentials</label>
-                    
-                    <input name="username" placeholder="Username" required
-                        class="w-full bg-neutral-950 border border-neutral-800 rounded text-sm px-4 py-3 
-                               text-white placeholder-neutral-600 outline-none transition-all
-                               focus:border-neutral-500 focus:bg-black" />
-
-                    <input name="password" type="password" placeholder="Password" required autocomplete="current-password"
-                        class="w-full bg-neutral-950 border border-neutral-800 rounded text-sm px-4 py-3 
-                               text-white placeholder-neutral-600 outline-none transition-all
-                               focus:border-neutral-500 focus:bg-black" />
-                </div>
-
-                <div class="h-px w-full bg-neutral-800"></div>
-
-                <div class="space-y-3">
-                    <label class="text-[10px] font-bold text-neutral-500 uppercase ml-1">Room Settings</label>
-
-                    <input name="roomId" placeholder="Set Room ID" required
-                        class="w-full bg-neutral-950 border border-neutral-800 rounded text-sm px-4 py-3 
-                               text-white placeholder-neutral-600 outline-none transition-all
-                               focus:border-neutral-500 focus:bg-black" />
-
-                    <input name="roomPwd" type="password" placeholder="Set Room Password" required autocomplete="new-password"
-                        class="w-full bg-neutral-950 border border-neutral-800 rounded text-sm px-4 py-3 
-                               text-white placeholder-neutral-600 outline-none transition-all
-                               focus:border-neutral-500 focus:bg-black" />
-                </div>
-
-                <button type="submit" 
-                        class="w-full bg-white text-black font-bold text-sm py-3.5 rounded mt-4
-                               hover:bg-neutral-200 transition-colors duration-200">
-                    Authenticate & Save
-                </button>
-
-            </div>
-
-            {% if error %}
-                <div class="mt-6 text-center border-t border-red-900/30 pt-4">
-                    <p class="text-red-400 text-xs font-mono">
-                        [!] {{ error }}
-                    </p>
-                </div>
-            {% endif %}
-
-        </div>
-        
-        <p class="text-center text-neutral-700 text-[10px] mt-6 font-mono">
-            SECURE CONNECTION // ENCRYPTED
+        <h2 class="text-lg font-semibold text-center mb-1">
+            System Access
+        </h2>
+        <p class="text-[11px] text-neutral-500 text-center mb-6">
+            Admin & Configuration
         </p>
 
-    </form>
+        <!-- ADMIN LOGIN -->
+        <div class="space-y-2 mb-6">
+            <label class="text-[11px] text-neutral-400">Admin Credentials</label>
+
+            <input name="username"
+                   placeholder="Username"
+                   required
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+
+            <input name="password"
+                   type="password"
+                   placeholder="Password"
+                   required
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+        </div>
+
+        <!-- RESET ADMIN -->
+        <div class="space-y-2 mb-4">
+            <label class="flex items-center gap-2 text-[11px] text-neutral-400">
+                <input type="checkbox" id="reset_admin_checkbox" name="reset_admin">
+                Reset Admin Credentials
+            </label>
+
+            <input name="new_admin_user"
+                   placeholder="New Admin Username"
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+
+            <input name="new_admin_pass"
+                   type="password"
+                   placeholder="New Admin Password"
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+        </div>
+
+        <!-- ROOM -->
+        <div class="space-y-2 mb-6">
+            <label class="text-[11px] text-neutral-400">Room Settings</label>
+
+            <input name="roomId"
+                   placeholder="Room ID"
+                   required
+                   autocomplete="off"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+
+            <input name="roomPwd"
+                   type="password"
+                   placeholder="new Room Password"
+                   required
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+        </div>
+
+        <button type="submit"
+                class="w-full border border-neutral-700 bg-neutral-900 text-sm py-2 rounded">
+            Authenticate & Save
+        </button>
+
+        {% if error %}
+        <p class="text-red-400 text-[11px] mt-4 text-center">
+            {{ error }}
+        </p>
+        {% endif %}
+
+    </div>
+
+    <p class="text-center text-neutral-600 text-[50px] mt-4">
+        Arigatou
+    </p>
+</form>
 
 </body>
 </html>
