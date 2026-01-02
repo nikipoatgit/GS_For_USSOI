@@ -17,6 +17,9 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import asyncio
 
+
+
+# this in one way route from android to browser
 class streamingFmp4WebsocketConnector(AsyncWebsocketConsumer): # Android to js 
     group_name = "gp1"
     active_ws = None
