@@ -82,7 +82,7 @@ Host-side logins are persistent until the user logs out.
 
 <img src="doc/GS_CLIENT_INFO_PAGE.png" alt="GCS Client Info" style="display:block; margin:0 auto; margin-bottom:1rem;" />
 
-### Serial Tunnel
+### 3. Serial Tunnel
 
 Tunnel settings are configurable in `gs_config.json`. Example:
 
