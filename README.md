@@ -78,7 +78,7 @@ Host-side logins are persistent until the user logs out.
 
 ### 2. Control Panel
 
-<img src="doc/GS_MAIN_PAGE.png" alt="GCS Main Page" width="600" style="display:block; margin:0 auto; margin-bottom:1rem;" />
+<img src="doc/GS_MAIN_PAGE.png" alt="GCS Main Page" style="display:block; margin:0 auto; margin-bottom:1rem;" />
 
 <img src="doc/GS_CLIENT_INFO_PAGE.png" alt="GCS Client Info" style="display:block; margin:0 auto; margin-bottom:1rem;" />
 
