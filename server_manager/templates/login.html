@@ -1,0 +1,119 @@
+
+
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+</head>
+
+<body class="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-200">
+
+<form method="post" class="w-full max-w-sm"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false">
+    {% csrf_token %}
+
+    <div class="border border-neutral-800 rounded p-6 bg-neutral-950">
+
+        <h2 class="text-lg font-semibold text-center mb-1">
+            System Access
+        </h2>
+        <p class="text-[11px] text-neutral-500 text-center mb-6">
+            Admin & Configuration
+        </p>
+
+        <!-- ADMIN LOGIN -->
+        <div class="space-y-2 mb-6">
+            <label class="text-[11px] text-neutral-400">Admin Credentials</label>
+
+            <input name="username"
+                   placeholder="Username"
+                   required
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+
+            <input name="password"
+                   type="password"
+                   placeholder="Password"
+                   required
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+        </div>
+
+        <!-- RESET ADMIN -->
+        <div class="space-y-2 mb-4">
+            <label class="flex items-center gap-2 text-[11px] text-neutral-400">
+                <input type="checkbox" id="reset_admin_checkbox" name="reset_admin">
+                Reset Admin Credentials
+            </label>
+
+            <input name="new_admin_user"
+                   placeholder="New Admin Username"
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+
+            <input name="new_admin_pass"
+                   type="password"
+                   placeholder="New Admin Password"
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+        </div>
+
+        <!-- ROOM -->
+        <div class="space-y-2 mb-6">
+            <label class="text-[11px] text-neutral-400">Room Settings</label>
+
+            <input name="roomId"
+                   placeholder="Room ID"
+                   required
+                   autocomplete="off"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+
+            <input name="roomPwd"
+                   type="password"
+                   placeholder="new Room Password"
+                   required
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   class="w-full border border-neutral-700 bg-black text-sm px-3 py-2 rounded" />
+        </div>
+
+        <button type="submit"
+                class="w-full border border-neutral-700 bg-neutral-900 text-sm py-2 rounded">
+            Authenticate & Save
+        </button>
+
+        {% if error %}
+        <p class="text-red-400 text-[11px] mt-4 text-center">
+            {{ error }}
+        </p>
+        {% endif %}
+
+    </div>
+
+    <p class="text-center text-neutral-600 text-[50px] mt-4">
+        Arigatou
+    </p>
+</form>
+
+</body>
+</html>
