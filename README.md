@@ -7,7 +7,6 @@
 #### Future Updates :
 - Multi client support  
 - P2P Connection Support (via NAT Traversal)
-- Latest Mission Planner now supports WebSocket connections; WS Forward will be integrated at the earliest 
 
 ## 📑 Table of Contents
 - [Documentation](https://github.com/nikipoatgit/GS_For_USSOI/wiki)
