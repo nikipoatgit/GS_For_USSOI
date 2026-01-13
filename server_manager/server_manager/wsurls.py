@@ -31,14 +31,15 @@ Including another URLconf
 """
 
 from django.urls import path
-from core.telemetry import telemetryWebSocketConnector
+from core.telemetry import *
 from core.controlapi import *
 from core.mseFmp4 import *
 
 urlpatterns = [
     path("control/js", jsWsConnector.as_asgi()),
     path("control/client",clientWsConnector.as_asgi()),
-    path("uartunnel", telemetryWebSocketConnector.as_asgi()),
+    path("tcp/uartunnel", telemetryWebSocketConnector.as_asgi()),
+    path("ws/uartunnel", UartTunnelConsumer.as_asgi()), 
     path('mse/client', streamingFmp4WebsocketConnector.as_asgi()),
     path('mse/js',streamingFmp4WebsocketConnectorJS.as_asgi())
 ]

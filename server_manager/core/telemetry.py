@@ -18,6 +18,7 @@ import os
 import asyncio
 from django.conf import settings
 from channels.generic.websocket import AsyncWebsocketConsumer
+from urllib.parse import parse_qs
 
 def get_tcp_config():
     """
@@ -137,5 +138,106 @@ class telemetryWebSocketConnector(AsyncWebsocketConsumer):
             if not writer.is_closing():
                 writer.write(bytes_data)
                 await writer.drain()
-        elif bytes_data:
-            print("Received WebSocket data, but Mission Planner is not connected.")
+        
+
+
+ACTIVE = {
+    "fc": None,
+    "mp": None,
+    "listen": set(),
+}
+
+
+class UartTunnelConsumer(AsyncWebsocketConsumer):
+
+    async def connect(self):
+        # default mode
+        self.mode = "listen"
+
+        raw_qs = self.scope.get("query_string", b"").decode()
+        query = parse_qs(raw_qs)
+        mode = query.get("mode", [None])[0]
+
+        if mode in ("fc", "mp", "listen"):
+            self.mode = mode
+
+        # enforce singleton roles
+        if self.mode in ("fc", "mp"):
+            if ACTIVE[self.mode] is not None:
+                print(f"[REJECT] {self.mode.upper()} already connected")
+                await self.close(code=4002)
+                return
+            ACTIVE[self.mode] = self.channel_name
+
+        elif self.mode == "listen":
+            ACTIVE["listen"].add(self.channel_name)
+
+        await self.accept()
+
+        # ---- CONNECT LOGS ----
+        if self.mode == "fc":
+            print("Flight Controller connected")
+        elif self.mode == "mp":
+            print(" Mission Planner connected")
+        else:
+            print("Listener connected")
+
+    async def disconnect(self, code):
+        mode = getattr(self, "mode", None)
+        if not mode:
+            return
+
+        # ---- DISCONNECT LOGS ----
+        if mode == "fc":
+            if ACTIVE["fc"] == self.channel_name:
+                ACTIVE["fc"] = None
+                print("Flight Controller disconnected")
+
+        elif mode == "mp":
+            if ACTIVE["mp"] == self.channel_name:
+                ACTIVE["mp"] = None
+                print(" Mission Planner disconnected")
+
+        elif mode == "listen":
+            if self.channel_name in ACTIVE["listen"]:
+                ACTIVE["listen"].discard(self.channel_name)
+                print("Listener disconnected")
+            
+
+    async def receive(self, text_data=None, bytes_data=None):
+        payload = text_data if text_data is not None else bytes_data
+        if payload is None:
+            return
+
+        if self.mode == "fc":
+            # fc → mp
+            if ACTIVE["mp"]:
+                await self.channel_layer.send(
+                    ACTIVE["mp"],
+                    {"type": "uart.message", "data": payload},
+                )
+
+            # fc → listeners
+            for ch in ACTIVE["listen"]:
+                await self.channel_layer.send(
+                    ch,
+                    {"type": "uart.message", "data": payload},
+                )
+
+        elif self.mode == "mp":
+            # mp → fc
+            if ACTIVE["fc"]:
+                await self.channel_layer.send(
+                    ACTIVE["fc"],
+                    {"type": "uart.message", "data": payload},
+                )
+
+        # listen mode is receive-only
+
+    async def uart_message(self, event):
+        data = event.get("data")
+
+        if isinstance(data, bytes):
+            await self.send(bytes_data=data)
+        else:
+            await self.send(text_data=data)

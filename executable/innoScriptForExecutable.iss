@@ -46,7 +46,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "D:\COD_Projects\GCS_For_USSOI\executable\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\WEB_Projects\GCS_For_USSOI\executable\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

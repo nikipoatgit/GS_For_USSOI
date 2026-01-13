@@ -24,7 +24,7 @@ from daphne.server import Server
 from django.conf import settings as dj_settings
 from django.core.management import call_command
 
-CURRENT_VERSION = "2.0.0"
+CURRENT_VERSION = "2.0.01"
 REPO_API_URL = "https://api.github.com/repos/nikipoatgit/GS_For_USSOI/releases/latest"
 
 CONFIG_FILE = "gs_config.json"
@@ -40,12 +40,33 @@ def check_for_updates():
     try:
         req = urllib.request.Request(REPO_API_URL)
         req.add_header("User-Agent", "python-urllib")
+
         with urllib.request.urlopen(req, timeout=3) as response:
             data = json.loads(response.read().decode())
-            latest_tag = data.get("tag_name", "0.0.0")
-            if latest_tag.lstrip("v") > CURRENT_VERSION.lstrip("v"):
+
+            latest_tag = data.get("tag_name", "0.0.0").lstrip("v")
+            current = CURRENT_VERSION.lstrip("v")
+
+            latest_parts = latest_tag.split(".")
+            current_parts = current.split(".")
+
+            # Ensure at least major.minor
+            if len(latest_parts) < 2 or len(current_parts) < 2:
+                return
+
+            latest_major_minor = (
+                int(latest_parts[0]),
+                int(latest_parts[1])
+            )
+            current_major_minor = (
+                int(current_parts[0]),
+                int(current_parts[1])
+            )
+
+            if latest_major_minor > current_major_minor:
                 print(f"   UPDATE AVAILABLE: {latest_tag}")
                 print(f"   Download at: {data.get('html_url')}")
+
                 try:
                     import ctypes
                     ctypes.windll.user32.MessageBoxW(
@@ -58,8 +79,10 @@ def check_for_updates():
                     pass
             else:
                 print(f"[*] You are up to date ({CURRENT_VERSION}).\n")
+
     except:
         print("[!] Could not check for updates. Skipping.\n")
+
 
 if not os.path.exists(CONFIG_PATH):
     config = {}
@@ -106,6 +129,7 @@ PORT = config["port"]
 print("\n========================================")
 print("   USSOI GROUND SERVER")
 print(f"[*] Web Server: http://{HOST}:{PORT}")
+print(f"[*] Mission Planner: ws://{HOST}:{PORT}/ws/uartunnel?mode=mp")
 
 sys.path.append(BASE_DIR)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "server_manager.settings")

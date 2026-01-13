@@ -1,4 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
+import autobahn  
+import os       
+
+autobahn_path = os.path.dirname(autobahn.__file__)
 
 block_cipher = None
 
@@ -10,7 +14,8 @@ a = Analysis(
         ('staticfiles', 'staticfiles'),
         ('templates', 'templates'),
         ('server_manager', 'server_manager'), # Settings folder
-        ('core', 'core'),                     # Your app logic
+        ('core', 'core'),
+        (autobahn_path, 'autobahn'),                     # Your app logic
     ],
     hiddenimports=[
         'django.contrib.admin',
@@ -25,6 +30,7 @@ a = Analysis(
         'core',                # Ensure your app module is importable
         'whitenoise',
         'whitenoise.middleware',
+        'autobahn',
     ],
     hookspath=[],
     hooksconfig={},
@@ -50,9 +56,9 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
+    uac_admin=True,
     upx_exclude=[],
-    runtime_tmpdir=None,
-    console=True,              # True = Keep the black terminal window open
+    runtime_tmpdir=None,              # True = Keep the black terminal window open
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
