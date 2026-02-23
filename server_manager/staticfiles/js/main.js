@@ -23,6 +23,8 @@ window.clientConfig = {
     webrtc: true,
     mse: false,
     local: false,
+    mse_high_fps: false,
+    HighFpsSupport: false,
     isRecordingSettings: false,
     isStreamingActive: false,
     isRecordingActive: false
@@ -490,9 +492,6 @@ recordBtn.addEventListener('click', () => {
 let rotation = 0;
 
 settingsBtn.addEventListener('click', () => {
-    if (getCameraResolutions === null) {
-        generatePayload({ type: "getCamRes" }, () => generatePayload({ type: "getCamRes" }));
-    }
     settingsPanel.classList.toggle('hidden');
     rotation += 20;
     const icon = settingsBtn.querySelector('i');
@@ -501,9 +500,17 @@ settingsBtn.addEventListener('click', () => {
 });
 
 qualitySettingsBtn.addEventListener('click', () => {
+
+    const needFetch = !getCameraResolutions || (getCameraResolutions.resType === "HighFpsRes" && !clientConfig.mse_high_fps) ||(getCameraResolutions.resType === "NormalRes" && clientConfig.mse_high_fps);
+
+    if (needFetch) {
+        generatePayload({ type: "getCamRes" });
+    }
+
     populateQualityPanel();
     qualityPanel.classList.remove('hidden');
 });
+
 closeQualityPanelBtn.addEventListener('click', () => {
     qualityPanel.classList.add('hidden');
 });
@@ -523,6 +530,7 @@ document.getElementById('start-stream-btn').onclick = () => {
         type: "stream",
         webrtc: clientConfig.webrtc,
         mse: clientConfig.mse,
+        mse_high_fps:clientConfig.mse_high_fps,
         start: true
     },
         () => {
@@ -549,6 +557,7 @@ function stopStream() {
         type: "stream",
         webrtc: true,
         mse: true,
+        mse_high_fps:true,
         start: false
     },
         () => {
@@ -589,38 +598,64 @@ document.getElementById('stop-mavlink-btn').onclick = () => {
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 function populateQualityPanel() {
+    if (getCameraResolutions === null) {
+        return;
+    }
     const data = getCameraResolutions;
     const widthInput = document.getElementById('custom-width');
     const heightInput = document.getElementById('custom-height');
+    const fpsSelect = document.getElementById('custom-fps'); // add this to your HTML
     const cameraSectionsContainer = document.getElementById('camera-sections');
 
     cameraSectionsContainer.innerHTML = '';
+
     data.cameraResolutions.forEach(camera => {
         const cameraTitle = document.createElement('h5');
         cameraTitle.className = 'font-semibold text-sm capitalize';
         cameraTitle.textContent = `${camera.facing} Camera`;
+
         const resolutionsContainer = document.createElement('div');
         resolutionsContainer.className = 'grid grid-cols-4 gap-2';
 
         camera.resolutions.forEach(res => {
             const button = document.createElement('button');
             button.className = 'bg-gray-600 hover:bg-blue-500 text-xs py-1 rounded-md transition-colors';
-            button.textContent = `${res.width} x ${res.height}`;
+            button.textContent = `${res.width}x${res.height}`;
             button.dataset.width = res.width;
             button.dataset.height = res.height;
-            resolutionsContainer.appendChild(button);
+
             button.addEventListener('click', () => {
+                // Deselect all buttons
+                cameraSectionsContainer.querySelectorAll('button').forEach(b =>
+                    b.classList.replace('bg-blue-500', 'bg-gray-600')
+                );
+                button.classList.replace('bg-gray-600', 'bg-blue-500');
+
                 widthInput.value = res.width;
                 heightInput.value = res.height;
+
+
+                // Populate FPS badges for this resolution
+                if (fpsSelect) {
+                    fpsSelect.innerHTML = '';
+                    if (res.fpsRanges?.length) {
+                        res.fpsRanges.forEach(r => {
+                            const item = document.createElement('div');
+                            item.className = 'bg-gray-600 text-xs px-2 py-1 rounded-md text-white w-full text-center';
+                            item.textContent = r.min === r.max ? `${r.max} fps` : `${r.min}–${r.max} fps`;
+                            fpsSelect.appendChild(item);
+                        });
+                    }
+                }
             });
 
+            resolutionsContainer.appendChild(button);
         });
 
         cameraSectionsContainer.appendChild(cameraTitle);
         cameraSectionsContainer.appendChild(resolutionsContainer);
     });
 }
-
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 /**

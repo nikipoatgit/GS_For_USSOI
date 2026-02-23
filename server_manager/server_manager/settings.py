@@ -47,7 +47,7 @@ except Exception as e:
     SECRET_KEY = secrets.token_urlsafe(50)
     print(f"[!] Warning: Error loading key: {e}")
 
-DEBUG = False
+DEBUG = True
 
 INSTALLED_APPS = [
     'daphne',
@@ -131,9 +131,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #Modify this according to user needs
 
 ALLOWED_HOSTS = ['*']
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-CSRF_TRUSTED_ORIGINS = []
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-USE_X_FORWARDED_HOST = True
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+CSRF_TRUSTED_ORIGINS = ["http://192.168.137.1:8000"]
+SECURE_PROXY_SSL_HEADER = None
+USE_X_FORWARDED_HOST = False
 

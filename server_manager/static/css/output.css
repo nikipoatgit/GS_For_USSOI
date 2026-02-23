@@ -28,7 +28,6 @@
     --color-gray-800: oklch(27.8% 0.033 256.848);
     --color-gray-900: oklch(21% 0.034 264.665);
     --color-neutral-200: oklch(92.2% 0 0);
-    --color-neutral-300: oklch(87% 0 0);
     --color-neutral-400: oklch(70.8% 0 0);
     --color-neutral-500: oklch(55.6% 0 0);
     --color-neutral-600: oklch(43.9% 0 0);
@@ -318,9 +317,6 @@
   .z-50 {
     z-index: 50;
   }
-  .col-span-2 {
-    grid-column: span 2 / span 2;
-  }
   .container {
     width: 100%;
     @media (width >= 40rem) {
@@ -344,6 +340,9 @@
   }
   .mx-3 {
     margin-inline: calc(var(--spacing) * 3);
+  }
+  .mx-6 {
+    margin-inline: calc(var(--spacing) * 6);
   }
   .mx-auto {
     margin-inline: auto;
@@ -467,6 +466,9 @@
   }
   .max-h-52 {
     max-height: calc(var(--spacing) * 52);
+  }
+  .max-h-54 {
+    max-height: calc(var(--spacing) * 54);
   }
   .min-h-screen {
     min-height: 100vh;
@@ -621,6 +623,9 @@
   }
   .justify-end {
     justify-content: flex-end;
+  }
+  .gap-1 {
+    gap: calc(var(--spacing) * 1);
   }
   .gap-1\.5 {
     gap: calc(var(--spacing) * 1.5);

@@ -1,18 +1,3 @@
-// Copyright (C) 2026 Nikhil
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-// See the GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 /*global SelectBox, interpolate*/
 // Handles related-objects functionality: lookup link for raw_id_fields
 // and Add Another links.
@@ -70,8 +55,9 @@
         if (elem.classList.contains('vManyToManyRawIdAdminField') && elem.value) {
             elem.value += ',' + chosenId;
         } else {
-            document.getElementById(name).value = chosenId;
+            elem.value = chosenId;
         }
+        $(elem).trigger('change');
         const index = relatedWindows.indexOf(win);
         if (index > -1) {
             relatedWindows.splice(index, 1);
@@ -102,7 +88,7 @@
         }
     }
 
-    function updateRelatedSelectsOptions(currentSelect, win, objId, newRepr, newId) {
+    function updateRelatedSelectsOptions(currentSelect, win, objId, newRepr, newId, skipIds = []) {
         // After create/edit a model from the options next to the current
         // select (+ or :pencil:) update ForeignKey PK of the rest of selects
         // in the page.
@@ -115,7 +101,7 @@
         const selectsRelated = document.querySelectorAll(`[data-model-ref="${modelName}"] [data-context="available-source"]`);
 
         selectsRelated.forEach(function(select) {
-            if (currentSelect === select) {
+            if (currentSelect === select || skipIds && skipIds.includes(select.id)) {
                 return;
             }
 
@@ -124,6 +110,11 @@
             if (!option) {
                 option = new Option(newRepr, newId);
                 select.options.add(option);
+                // Update SelectBox cache for related fields.
+                if (window.SelectBox !== undefined && !SelectBox.cache[currentSelect.id]) {
+                    SelectBox.add_to_cache(select.id, option);
+                    SelectBox.redisplay(select.id);
+                }
                 return;
             }
 
@@ -151,9 +142,14 @@
             $(elem).trigger('change');
         } else {
             const toId = name + "_to";
+            const toElem = document.getElementById(toId);
             const o = new Option(newRepr, newId);
             SelectBox.add_to_cache(toId, o);
             SelectBox.redisplay(toId);
+            if (toElem && toElem.nodeName.toUpperCase() === 'SELECT') {
+                const skipIds = [name + "_from"];
+                updateRelatedSelectsOptions(toElem, win, null, newRepr, newId, skipIds);
+            }
         }
         const index = relatedWindows.indexOf(win);
         if (index > -1) {
@@ -210,6 +206,7 @@
     window.dismissChangeRelatedObjectPopup = dismissChangeRelatedObjectPopup;
     window.dismissDeleteRelatedObjectPopup = dismissDeleteRelatedObjectPopup;
     window.dismissChildPopups = dismissChildPopups;
+    window.relatedWindows = relatedWindows;
 
     // Kept for backward compatibility
     window.showAddAnotherPopup = showRelatedObjectPopup;

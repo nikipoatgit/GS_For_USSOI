@@ -39,23 +39,7 @@ function connectWebSocket() {
 
     webSocket1.onopen = () => {
         addLogEntry("info", "Ground Server Connection Established", new Date().toLocaleTimeString());
-        if (isParamsSetForClient === false) {
-            setTimeout(() => {
-                generatePayloadAdmin({ "type": "getClientConfig" }, () => generatePayloadAdmin({ "type": "getClientConfig" }));
-                generatePayloadAdmin({ "type": "deviceInfo" });
-            }, 500);
-            setTimeout(() => {
-                addLogEntry("info", "Device Name : Brand", DeviceInfo.Device.DeviceName + " : " +  DeviceInfo.Device.Brand);
-                addLogEntry("info", "Device AndroidVersion", DeviceInfo.Device.AndroidVersion);
-                if (DeviceInfo.Device.AndroidVersion < 7) {
-                    addLogEntry("warn", "Device AndroidVersion", "Client Application Compatibility Issue (Android < 7)");
-                }
-                if (DeviceInfo.Device.SDKVersion < 24) {
-                    addLogEntry("warn", "Device SDK ", "Client Application Compatibility Issue  (SDK < 24)");
-                }
-            }, 3000);
-
-        }
+        generatePayloadAdmin({ "type": "getClientConfig" }, () => generatePayloadAdmin({ "type": "getClientConfig" }));
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
     };
@@ -88,9 +72,9 @@ connectWebSocket();
 
 function webSocketOnMessage1(event) {
     const parseData = JSON.parse(event.data);
-  
-        console.log("Incoming :" + JSON.stringify(parseData));
-    
+
+    console.log("Incoming :" + JSON.stringify(parseData));
+
     switch (parseData.type) {
         case 'clientStats': {
             updateDeviceImpInfo(parseData.hex);
@@ -118,12 +102,12 @@ function webSocketOnMessage1(event) {
         }
         case 'clientStatus': {
             if (parseData.t == '1') {
+                generatePayloadAdmin({ "type": "getClientConfig" });
                 addLogEntry("success", "Device ", new Date().toLocaleTimeString() + "  --" + parseData.s);
                 setTimeout(() => {
                     generatePayloadAdmin({ "type": "getClientConfig" }, () => generatePayloadAdmin({ "type": "getClientConfig" }))
                     generatePayloadAdmin({ "type": "deviceInfo" });;
                 }, 1000);
-                break;
             }
             else if (parseData.t == '0') {
                 addLogEntry("warn", "Device ", new Date().toLocaleTimeString() + "  --" + parseData.s);

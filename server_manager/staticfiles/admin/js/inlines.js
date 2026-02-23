@@ -1,18 +1,3 @@
-// Copyright (C) 2026 Nikhil
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-// See the GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 /*global DateTimeShortcuts, SelectFilter*/
 /**
  * Django admin inlines
@@ -65,11 +50,11 @@
                     // If forms are laid out as table rows, insert the
                     // "add" button in a new table row:
                     const numCols = $this.eq(-1).children().length;
-                    $parent.append('<tr class="' + options.addCssClass + '"><td colspan="' + numCols + '"><a href="#">' + options.addText + "</a></tr>");
+                    $parent.append('<tr class="' + options.addCssClass + '"><td colspan="' + numCols + '"><a role="button" class="addlink" href="#">' + options.addText + "</a></tr>");
                     addButton = $parent.find("tr:last a");
                 } else {
                     // Otherwise, insert it immediately after the last form:
-                    $this.filter(":last").after('<div class="' + options.addCssClass + '"><a href="#">' + options.addText + "</a></div>");
+                    $this.filter(":last").after('<div class="' + options.addCssClass + '"><a role="button" class="addlink" href="#">' + options.addText + "</a></div>");
                     addButton = $this.filter(":last").next().find("a");
                 }
             }
@@ -119,15 +104,15 @@
             if (row.is("tr")) {
                 // If the forms are laid out in table rows, insert
                 // the remove button into the last table cell:
-                row.children(":last").append('<div><a class="' + options.deleteCssClass + '" href="#">' + options.deleteText + "</a></div>");
+                row.children(":last").append('<div><a role="button" class="' + options.deleteCssClass + '" href="#">' + options.deleteText + "</a></div>");
             } else if (row.is("ul") || row.is("ol")) {
                 // If they're laid out as an ordered/unordered list,
                 // insert an <li> after the last list item:
-                row.append('<li><a class="' + options.deleteCssClass + '" href="#">' + options.deleteText + "</a></li>");
+                row.append('<li><a role="button" class="' + options.deleteCssClass + '" href="#">' + options.deleteText + "</a></li>");
             } else {
                 // Otherwise, just insert the remove button as the
                 // last child element of the form's container:
-                row.children(":first").append('<span><a class="' + options.deleteCssClass + '" href="#">' + options.deleteText + "</a></span>");
+                row.children(":first").append('<span><a role="button" class="' + options.deleteCssClass + '" href="#">' + options.deleteText + "</a></span>");
             }
             // Add delete handler for each row.
             row.find("a." + options.deleteCssClass).on('click', inlineDeleteHandler.bind(this));

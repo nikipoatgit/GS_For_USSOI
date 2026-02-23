@@ -16,29 +16,31 @@
 /* ---------- Overlay control ---------- */
 let isConfigOpen = false;
 
-function setupConfigParams(parseData){
-            TunnelMode = parseData.tunnelMode;
-            isParamsSetForClient = parseData.isParamsReceived;
-            clientConfig.local = parseData.local;
-            clientConfig.mse = parseData.mse;
-            clientConfig.webrtc = parseData.webrtc;
-            clientConfig.isStreamingActive = parseData.stream;
-            clientConfig.isRecordingActive = parseData.record;
-            if (parseData.version)
-            if (isParamsSetForClient === false) {
-                setParamsForClient();
-            }
-            if (clientConfig.isRecordingActive == true) {
-                setRecordingActiveUI();
-            }
-            else {
-                revertRecordingUI();
-            }
-            if (clientConfig.isStreamingActive === true) {
-                addLogEntry("warn", "Device ", "Streaming Active Restart to get Feed");
-            }
-            setTunnelButtonsState();
-            updateStreamIcon();
+function setupConfigParams(parseData) {
+    TunnelMode = parseData.tunnelMode;
+    isParamsSetForClient = parseData.isParamsReceived;
+    clientConfig.local = parseData.local;
+    clientConfig.mse = parseData.mse;
+    clientConfig.webrtc = parseData.webrtc;
+    clientConfig.mse_high_fps = parseData.mse_high_fps
+    clientConfig.HighFpsSupport = parseData.HighFpsSupport
+    clientConfig.isStreamingActive = parseData.stream;
+    clientConfig.isRecordingActive = parseData.record;
+    if (parseData.version)
+        if (isParamsSetForClient === false) {
+            setParamsForClient();
+        }
+    if (clientConfig.isRecordingActive == true) {
+        setRecordingActiveUI();
+    }
+    else {
+        revertRecordingUI();
+    }
+    if (clientConfig.isStreamingActive === true) {
+        addLogEntry("warn", "Device ", "Streaming Active Restart to get Feed");
+    }
+    setTunnelButtonsState();
+    updateStreamIcon();
 }
 
 function setParamsForClient() {
@@ -57,43 +59,65 @@ function closeClientConfig() {
 
 /* ---------- Mode handling ---------- */
 function initModeFromClientConfig() {
-    const webrtc = document.getElementById('cfg-webrtc');
-    const mse    = document.getElementById('cfg-mse');
-    const local  = document.getElementById('cfg-local');
+    const webrtc   = document.getElementById('cfg-webrtc');
+    const mse      = document.getElementById('cfg-mse');
+    const local    = document.getElementById('cfg-local');
+    const highFps  = document.getElementById('cfg-highfps');
 
-    webrtc.checked = !!window.clientConfig.webrtc;
-    mse.checked    = !!window.clientConfig.mse;
-    local.checked  = !!window.clientConfig.local;
+    webrtc.checked  = !!window.clientConfig.webrtc;
+    mse.checked     = !!window.clientConfig.mse;
+    local.checked   = !!window.clientConfig.local;
+    highFps.checked = !!window.clientConfig.mse_high_fps;
 
     if (webrtc.checked && mse.checked) {
         mse.checked = false;
     }
+
     handleModeChange(null);
 }
 
 function handleModeChange(e) {
-    const webrtc = document.getElementById('cfg-webrtc');
-    const mse = document.getElementById('cfg-mse');
-    const local = document.getElementById('cfg-local');
+    const webrtc  = document.getElementById('cfg-webrtc');
+    const mse     = document.getElementById('cfg-mse');
+    const local   = document.getElementById('cfg-local');
+    const highFps = document.getElementById('cfg-highfps');
 
+    /* mutual exclusion */
     if (e?.target === webrtc && webrtc.checked) mse.checked = false;
     if (e?.target === mse && mse.checked) webrtc.checked = false;
 
+    /* local note */
     document.getElementById('local-note')
         .classList.toggle('hidden', !local.checked);
 
-    const turnEnabled = webrtc.checked;
+    /* High FPS rules */
+    const highFpsSupported = !!window.clientConfig.HighFpsSupport;
+    const highFpsAllowed   = mse.checked && highFpsSupported;
 
+    highFps.disabled = !highFpsAllowed;
+    highFps.classList.toggle('opacity-50', !highFpsAllowed);
+
+    /* only auto-clear on USER action */
+    if (e && !highFpsAllowed) {
+        highFps.checked = false;
+    }
+
+    /* Button enable logic */
     const addBtn = document.getElementById('add-turn-btn');
-    addBtn.disabled = !turnEnabled;
-    addBtn.classList.toggle('opacity-50', !turnEnabled);
 
+    const btnEnabled =
+        webrtc.checked ||
+        (mse.checked && highFps.checked && highFpsSupported);
+
+    addBtn.disabled = !btnEnabled;
+    addBtn.classList.toggle('opacity-50', !btnEnabled);
+
+    /* TURN inputs: WebRTC only */
     document.querySelectorAll('.turn-input').forEach(i => {
-        i.disabled = !turnEnabled;
-        i.classList.toggle('opacity-50', !turnEnabled);
+        i.disabled = !webrtc.checked;
+        i.classList.toggle('opacity-50', !webrtc.checked);
     });
 }
-
 /* ---------- TURN rows ---------- */
 
 function addTurnRow() {
@@ -113,7 +137,7 @@ function addTurnRow() {
     `;
 
     document.getElementById('turn-list').appendChild(row);
-    handleModeChange();
+    applyThisUiChangeToBtns();
 }
 
 /* ---------- Payload send ---------- */
@@ -134,9 +158,10 @@ function sendClientConfig() {
         type: "config",
         webrtc: document.getElementById('cfg-webrtc').checked,
         mse: document.getElementById('cfg-mse').checked,
+        mse_high_fps : document.getElementById('cfg-highfps').checked,
         local: document.getElementById('cfg-local').checked,
         baudrate: Number(document.getElementById('cfg-baud').value),
-        bitrate: Number(document.getElementById('cfg-local-bitrate').value)*8,
+        bitrate: Number(document.getElementById('cfg-local-bitrate').value) * 8,
         turn: turnServers,
     };
 
@@ -145,6 +170,7 @@ function sendClientConfig() {
     clientConfig.webrtc = document.getElementById('cfg-webrtc').checked;
     clientConfig.mse = document.getElementById('cfg-mse').checked;
     clientConfig.local = document.getElementById('cfg-local').checked;
+    clientConfig.mse_high_fps = document.getElementById('cfg-highfps').checked;
 
     if (clientConfig.mse && clientConfig.local) {
         setModeSlider();
@@ -152,7 +178,7 @@ function sendClientConfig() {
     else {
         unsetModeSlider();
     }
- 
+
     updateStreamIcon()
 
     isParamsSetForClient = true;
