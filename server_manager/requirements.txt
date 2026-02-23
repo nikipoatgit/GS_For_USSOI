@@ -1,4 +1,0 @@
-django
-channels
-daphne
-whitenoise
