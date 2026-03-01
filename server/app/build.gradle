@@ -15,8 +15,9 @@ group = 'com.ussoi'
 version = '2.1.0'
 
 ext {
-    nettyVersion = '4.1.107.Final'
+    nettyVersion = '4.2.10.Final'
     jacksonVersion = '2.17.1'
+    sqliteVersion = '3.45.1.0'
 }
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -26,6 +27,7 @@ repositories {
 dependencies {
     implementation "io.netty:netty-all:$nettyVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "org.xerial:sqlite-jdbc:$sqliteVersion"
 
 //    // Testing
 //    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
@@ -39,7 +41,6 @@ java {
 }
 
 application {
-    // Define the main class for the application.
     mainClass = 'ussoi.Main'
 }
 
