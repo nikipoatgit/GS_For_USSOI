@@ -5,7 +5,7 @@ import java.sql.*;
 import java.util.Base64;
 
 import static ussoi.Storage.DB.Database.getConnection;
-import static ussoi.utilityMethods.getTimestamp;
+import static ussoi.Utility.utilityMethods.getTimestamp;
 
 /**
  * *****************************************************************************
@@ -99,6 +99,54 @@ public class cookieSessionStore {
             throw new RuntimeException("Failed to create session", e);
         }
     }
+    public static String getDeviceIdFromSession(String token) {
+
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+
+        String sql = "SELECT deviceId FROM deviceSessions WHERE session_cookie = ? LIMIT 1";
+
+        try (Connection connection = getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            ps.setString(1, token);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("deviceId");
+                }
+                return null;
+            }
+
+        } catch (SQLException e) {
+            // TODO LOG
+            throw new RuntimeException("Device token lookup failed", e);
+        }
+    }
+
+    public static boolean doesDeviceIDExist(String deviceId) {
+
+        if (deviceId == null || deviceId.isBlank()) {
+            return false;
+        }
+
+        String sql = "SELECT 1 FROM deviceSessions WHERE deviceId = ? LIMIT 1";
+
+        try (Connection connection = getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            ps.setString(1, deviceId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();   // deviceId if token exists
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Device token validation failed", e);
+        }
+    }
+
     public static boolean doesDeviceTokenExist(String token) {
 
         if (token == null || token.isBlank()) {

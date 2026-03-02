@@ -13,7 +13,7 @@ import ussoi.WebApp.HomePage.RoomDispatcherMethods.RoomIntent;
 
 import java.util.Map;
 
-import static ussoi.utilityMethods.parseJsonFromBody;
+import static ussoi.Utility.utilityMethods.parseJsonFromBody;
 
 /**
  * *****************************************************************************

@@ -5,14 +5,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
-import ussoi.Device.DeviceAuthDispatcher;
+import ussoi.Device.HandleDeviceAuth;
 import ussoi.WebApp.HomePage.DeviceDispatcher;
 import ussoi.WebApp.HomePage.RoomDispatcher;
 import ussoi.WebApp.LoginPage.HandleUserLogin;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import static ussoi.Security.AuthenticationService.HttpResponseUtil.sendError;
 
 /**
  * *****************************************************************************
@@ -43,7 +43,7 @@ public class ApiHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         API_ROUTES.put(key(HttpMethod.POST, "/api/user/devices"),DeviceDispatcher::parseRequestDevices);
 
         // device api
-        API_ROUTES.put(key(HttpMethod.POST, "/api/device/authenticate"),DeviceAuthDispatcher::handleAuthenticate);
+        API_ROUTES.put(key(HttpMethod.POST, "/api/device/authenticate"), HandleDeviceAuth::authenticateDevice);
 
     }
 
@@ -61,24 +61,22 @@ public class ApiHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             return;
         }
 
+        if (!req.method().equals(HttpMethod.POST)) {
+            sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, "Only POST allowed");
+            return;
+        }
+
         ApiRouteHandler handler = API_ROUTES.get(key(req.method(), req.uri()));
 
         if (handler != null) {
             handler.handle(ctx, req);
         } else {
-            send404(ctx);
+            sendError(ctx,HttpResponseStatus.NOT_FOUND,"Api Route Not Found");
         }
 
     }
 
-    private void send404(ChannelHandlerContext ctx) {
-        FullHttpResponse res = new DefaultFullHttpResponse(
-                HttpVersion.HTTP_1_1,
-                HttpResponseStatus.NOT_FOUND,
-                Unpooled.copiedBuffer("404", CharsetUtil.UTF_8)
-        );
-        ctx.writeAndFlush(res);
-    }
+
     @FunctionalInterface
     public interface ApiRouteHandler {
         void handle(ChannelHandlerContext ctx, FullHttpRequest req);

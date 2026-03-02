@@ -30,18 +30,22 @@ public class DeviceSessionRegistry {
     public DeviceSessionRegistry(){
     }
 
-    public boolean addDeviceTODeviceSessionRegistry(String token,String roomId, String roomName, String deviceId){
-        return deviceMap.putIfAbsent(token, new DeviceSession( roomId,  roomName,  deviceId)) == null;
+    public boolean addDeviceTODeviceSessionRegistry(String roomId, String roomName, String deviceId){
+        return deviceMap.putIfAbsent(deviceId, new DeviceSession( roomId,  roomName,  deviceId)) == null;
     }
-    public boolean removeDeviceFromDeviceSessionRegistry(String token){
-        return  deviceMap.remove(token) != null;
+
+    public boolean removeDeviceFromDeviceSessionRegistry(String deviceId){
+        return  deviceMap.remove(deviceId) != null;
     }
-    public boolean isDeviceInDeviceSessionRegistry(String token){
-        return deviceMap.containsKey(token);
+
+    public boolean isDeviceInDeviceSessionRegistry(String deviceId){
+        return deviceMap.containsKey(deviceId);
     }
-    public DeviceSession getDevice(String token) {
-        return deviceMap.get(token);
+
+    public DeviceSession getDeviceSession(String deviceId) {
+        return deviceMap.get(deviceId);
     }
+
     public JsonNode getAllDevices() {
         ArrayNode array = MAPPER.createArrayNode();
         for (DeviceSession session : deviceMap.values()) {

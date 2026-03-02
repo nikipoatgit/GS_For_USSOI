@@ -6,14 +6,9 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import ussoi.Security.AuthenticationService.HttpResponseUtil;
 import ussoi.SessionHandler.Registry.UserSessionRegistry;
-import ussoi.SessionHandler.User.Room.RoomHandler;
-import ussoi.WebApp.HomePage.RoomDispatcherMethods.RoomIntent;
 
 import static ussoi.Security.AuthenticationService.HttpResponseUtil.sendJson;
-import static ussoi.Security.AuthorizationService.AckAndNack.AckStatus.ACK;
-import static ussoi.Security.AuthorizationService.AckAndNack.AckStatus.NACK;
-import static ussoi.Security.AuthorizationService.AckAndNack.buildAckStatus;
-import static ussoi.utilityMethods.parseJsonFromBody;
+import static ussoi.Utility.utilityMethods.parseJsonFromBody;
 
 /**
  * *****************************************************************************
@@ -46,7 +41,7 @@ public class DeviceDispatcher {
             return;
         }
         if(intent.equals("getDevices")){
-            sendJson(ctx, HttpResponseStatus.OK,UserSessionRegistry.getInstance().getUserSession().getDeviceSessionRegistry().getAllDevices(),null);
+            sendJson(ctx, HttpResponseStatus.OK,UserSessionRegistry.getInstance().getUserSession().getAllDevices(),null);
         }
         else{
             HttpResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST,"Invalid intend");

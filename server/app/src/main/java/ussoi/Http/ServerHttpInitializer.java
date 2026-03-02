@@ -9,7 +9,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import ussoi.Http.HttpRoute.ApiHandler;
 import ussoi.Http.HttpRoute.StaticFileHandler;
 import ussoi.Security.AuthenticationService.AuthGuardHandler;
-import ussoi.WebSocket.WebSocketRouterHandler;
+import ussoi.WebSocket.WebSocketRouter;
 
 import java.nio.file.Path;
 
@@ -20,15 +20,16 @@ public class ServerHttpInitializer extends ChannelInitializer<Channel> {
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(10 * 1024 * 1024));
+
         pipeline.addLast(new AuthGuardHandler());
+
+        pipeline.addLast(new WebSocketServerProtocolHandler("/ws", null, true));
+        pipeline.addLast(new WebSocketRouter());
 
         pipeline.addLast(new ApiHandler());
 
         // TODO : this path is hardcoded need to fix for distribution
         Path root = Path.of("D:/WEB/GCS_For_USSOI/server/web/dist").toAbsolutePath();
         pipeline.addLast(new StaticFileHandler(root));
-
-        pipeline.addLast(new WebSocketServerProtocolHandler("/ws", null, true));
-        pipeline.addLast(new WebSocketRouterHandler());
     }
 }

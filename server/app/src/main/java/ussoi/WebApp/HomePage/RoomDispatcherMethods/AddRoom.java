@@ -46,8 +46,7 @@ public class AddRoom implements RoomIntent {
             HttpResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST,"Room Value Null");
             return;
         }
-        RoomHandler room = userSession.getRoomHandler();
-        if (room.addRoom(roomId,roomName,roomPassword)){
+        if (userSession.addRoom(roomId,roomName,roomPassword)){
             sendJson(ctx, HttpResponseStatus.OK, buildAckStatus(ACK,"Room","Room Added",reqId),null);
         }
         else {

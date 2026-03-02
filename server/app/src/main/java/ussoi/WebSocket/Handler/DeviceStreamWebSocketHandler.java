@@ -1,4 +1,4 @@
-package ussoi.WebSocket.SocketHandler;
+package ussoi.WebSocket.Handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -10,7 +10,7 @@ import io.netty.handler.codec.http.websocketx.*;
  *
  * @author nikhi
  * *****************************************************************************
- * @file UserWebSocketHandler.java
+ * @file DeviceStreamWebSocketHandler.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -21,21 +21,18 @@ import io.netty.handler.codec.http.websocketx.*;
  * <p>
  * *****************************************************************************
  */
-public class UserWebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+public class DeviceStreamWebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,WebSocketFrame frame) {
 
         if (frame instanceof TextWebSocketFrame textFrame) {
             handleText(ctx, textFrame.text());
-        }
-        else if (frame instanceof BinaryWebSocketFrame binaryFrame) {
+        } else if (frame instanceof BinaryWebSocketFrame binaryFrame) {
             handleBinary(ctx, binaryFrame.content());
-        }
-        else if (frame instanceof CloseWebSocketFrame) {
+        } else if (frame instanceof CloseWebSocketFrame) {
             ctx.close();
-        }
-        else if (frame instanceof PingWebSocketFrame ping) {
+        } else if (frame instanceof PingWebSocketFrame ping) {
             ctx.writeAndFlush(new PongWebSocketFrame(ping.content().retain()));
         }
     }

@@ -27,7 +27,6 @@ public class GetRooms implements RoomIntent {
 
     @Override
     public void handle(ChannelHandlerContext ctx, JsonNode json, UserSession userSession) {
-        RoomHandler room = userSession.getRoomHandler();
-        HttpResponseUtil.sendJson(ctx, HttpResponseStatus.OK, room.getRoomsJson(),null);
+        HttpResponseUtil.sendJson(ctx, HttpResponseStatus.OK, userSession.getRoomsJson(),null);
     }
 }

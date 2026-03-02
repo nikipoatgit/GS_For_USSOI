@@ -1,4 +1,4 @@
-package ussoi.WebSocket.SocketHandler;
+package ussoi.WebSocket.Handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -10,7 +10,7 @@ import io.netty.handler.codec.http.websocketx.*;
  *
  * @author nikhi
  * *****************************************************************************
- * @file DeviceControlWebSocketHandler.java
+ * @file UserStreamWebSocketHandler.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -21,10 +21,10 @@ import io.netty.handler.codec.http.websocketx.*;
  * <p>
  * *****************************************************************************
  */
-public class DeviceControlWebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+public class UserStreamWebSocketHandler  extends SimpleChannelInboundHandler<WebSocketFrame> {
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx,WebSocketFrame frame) {
+    protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) {
 
         if (frame instanceof TextWebSocketFrame textFrame) {
             handleText(ctx, textFrame.text());
@@ -60,3 +60,4 @@ public class DeviceControlWebSocketHandler extends SimpleChannelInboundHandler<W
         ctx.close();
     }
 }
+

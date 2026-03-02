@@ -19,20 +19,9 @@ import ussoi.SessionHandler.User.Room.RoomHandler;
  * <p>
  * *****************************************************************************
  */
-public class UserSession {
-    private final RoomHandler roomHandler;
-    private final DeviceSessionRegistry deviceSessionRegistry;
+public class UserSession extends UserServices{
 
-    public UserSession(){
-        roomHandler = new RoomHandler();
-        deviceSessionRegistry = new DeviceSessionRegistry();
-    }
-    public RoomHandler getRoomHandler() {
-        return roomHandler;
-    }
-    public DeviceSessionRegistry getDeviceSessionRegistry() {
-        return deviceSessionRegistry;
-    }
+    public UserSession(){}
 
 
 }

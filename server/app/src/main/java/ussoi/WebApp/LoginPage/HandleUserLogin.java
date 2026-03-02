@@ -8,10 +8,10 @@ import ussoi.Security.AuthenticationService.cookieSessionStore;
 
 import java.util.Map;
 
-import static ussoi.Security.AuthenticationService.AuthService.authenticate;
-import static ussoi.Security.AuthenticationService.AuthService.extractSession;
+import static ussoi.Security.AuthenticationService.AuthService.authenticateUser;
+import static ussoi.Utility.utilityMethods.extractSession;
 import static ussoi.Security.AuthenticationService.cookieSessionStore.*;
-import static ussoi.utilityMethods.parseJsonFromBody;
+import static ussoi.Utility.utilityMethods.parseJsonFromBody;
 
 /**
  * *****************************************************************************
@@ -77,7 +77,7 @@ public class HandleUserLogin {
             return false;
         }
 
-        return authenticate(user,pass);
+        return authenticateUser(user,pass);
     }
 
 }

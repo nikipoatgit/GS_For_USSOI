@@ -20,7 +20,7 @@ import static ussoi.Security.AuthenticationService.cookieSessionStore.generateSe
  *
  * @author nikhi
  * *****************************************************************************
- * @file DeviceAuthDispatcher.java
+ * @file HandleDeviceAuth.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -31,8 +31,8 @@ import static ussoi.Security.AuthenticationService.cookieSessionStore.generateSe
  * <p>
  * *****************************************************************************
  */
-public class DeviceAuthDispatcher {
-    public static void handleAuthenticate(ChannelHandlerContext ctx, FullHttpRequest req) {
+public class HandleDeviceAuth {
+    public static void authenticateDevice(ChannelHandlerContext ctx, FullHttpRequest req) {
 
         String json = req.content().toString(StandardCharsets.UTF_8);
 
@@ -46,7 +46,7 @@ public class DeviceAuthDispatcher {
 
             UserSession us = UserSessionRegistry.getInstance().getUserSession();
 
-            boolean valid = us.getRoomHandler().validateRoomExistanceAndPwd(roomId,roomPwd);
+            boolean valid = us.validateRoomExistanceAndPwd(roomId,roomPwd);
 
             if (valid) {
                 String newToken;
@@ -58,11 +58,18 @@ public class DeviceAuthDispatcher {
 
                 addOrUpdateDeviceSessionToken(newToken,newDeviceId);
 
-                us.getDeviceSessionRegistry().addDeviceTODeviceSessionRegistry(newToken,roomId,roomPwd,newDeviceId);
+                if (us.addDeviceTODeviceSessionRegistry(roomId,roomPwd,newDeviceId)) {
 
-                Map<String, Object> payload = Map.of("deviceToken", newToken,"deviceId", newDeviceId);
+                    // TODO FORCE ADD DEVICE AND REMOVE NON ACTIVE DEVICES
 
-                HttpResponseUtil.sendJson(ctx,HttpResponseStatus.OK, payload ,null);
+                    Map<String, Object> payload = Map.of("deviceToken", newToken, "deviceId", newDeviceId);
+
+                    HttpResponseUtil.sendJson(ctx, HttpResponseStatus.OK, payload, null);
+                }
+                else {
+                    HttpResponseUtil.sendError(ctx,HttpResponseStatus.BAD_REQUEST,"Invalid Params");
+                }
+
             }
             else {
                 HttpResponseUtil.sendError(ctx,HttpResponseStatus.BAD_REQUEST,"Invalid Params");

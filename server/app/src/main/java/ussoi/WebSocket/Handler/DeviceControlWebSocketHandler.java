@@ -1,16 +1,17 @@
-package ussoi.WebSocket.SocketHandler;
+package ussoi.WebSocket.Handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.*;
+import ussoi.SessionHandler.Registry.UserSessionRegistry;
 
 /**
  * *****************************************************************************
  *
  * @author nikhi
  * *****************************************************************************
- * @file DeviceStreamWebSocketHandler.java
+ * @file DeviceControlWebSocketHandler.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -21,14 +22,17 @@ import io.netty.handler.codec.http.websocketx.*;
  * <p>
  * *****************************************************************************
  */
-public class DeviceStreamWebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+public class DeviceControlWebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+    private final String deviceId ;
+
+    public DeviceControlWebSocketHandler(String deviceId) {
+        this.deviceId = deviceId;
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,WebSocketFrame frame) {
 
-        if (frame instanceof TextWebSocketFrame textFrame) {
-            handleText(ctx, textFrame.text());
-        } else if (frame instanceof BinaryWebSocketFrame binaryFrame) {
+        if (frame instanceof BinaryWebSocketFrame binaryFrame) {
             handleBinary(ctx, binaryFrame.content());
         } else if (frame instanceof CloseWebSocketFrame) {
             ctx.close();
@@ -37,17 +41,19 @@ public class DeviceStreamWebSocketHandler extends SimpleChannelInboundHandler<We
         }
     }
 
-    private void handleText(ChannelHandlerContext ctx, String message) {
-        // process JSON message
-    }
-
     private void handleBinary(ChannelHandlerContext ctx, ByteBuf buf) {
-        // optional
+       try{
+           UserSessionRegistry.getInstance().getUserSession().getDeviceSession(deviceId).processIncomingDeviceMessage(buf);
+       }
+       finally {
+           buf.release();
+       }
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         // connection established
+        UserSessionRegistry.getInstance().getUserSession().getDeviceSession(deviceId).addDeviceToDeviceWs(ctx.channel());
     }
 
     @Override

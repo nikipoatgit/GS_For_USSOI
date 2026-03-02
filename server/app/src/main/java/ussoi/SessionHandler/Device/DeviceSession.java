@@ -3,6 +3,12 @@ package ussoi.SessionHandler.Device;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import ussoi.SessionHandler.User.RolePolicy.Role;
+import ussoi.WebSocket.Registry.ControlWebSocketRegistry;
+
+import static ussoi.Utility.utilityMethods.parseJsonFromBody;
 
 /**
  * *****************************************************************************
@@ -20,27 +26,82 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * <p>
  * *****************************************************************************
  */
-public class DeviceSession {
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+public class DeviceSession extends DeviceServices {
 
-    private final String roomId;
-    private final String roomName;
-    private final String deviceId;
+    private final ControlWebSocketRegistry controlWebSocketRegistry;
 
     public DeviceSession(String roomId, String roomName, String deviceId) {
         this.roomId = roomId;
         this.roomName = roomName;
         this.deviceId = deviceId;
+        controlWebSocketRegistry = new ControlWebSocketRegistry();
     }
 
-    public JsonNode getDeviceRoom() {
-        ObjectNode node = MAPPER.createObjectNode();
+    // assuming user Exist in db
+    public void addUserToUserWsRegistry(String userId, Channel channel, Role role){
+        controlWebSocketRegistry.registerUser(userId,channel,role);
+    }
 
-        node.put("roomId", roomId);
-        node.put("roomName", roomName);
-        node.put("deviceId", deviceId);
+    public boolean checkIfUserExist(String userId){
+        return controlWebSocketRegistry.checkIfUserExist(userId);
+    }
 
-        return node;
+    // assuming user has done this checkIfDevicerExist
+    public void addDeviceToDeviceWs(Channel channel){
+        controlWebSocketRegistry.registerDevice(channel);
+    }
+
+    public void processIncomingDeviceMessage( ByteBuf message){
+        JsonNode msg = parseJsonFromBody(message);
+        if (msg == null) {
+            return;
+        }
+        int impact = msg.path("impact").asInt(-1);
+
+        if (impact == -1) return;
+
+        switch (impact) {
+            case 0:
+                processDeviceMessage(msg);
+                break;
+
+            case 1:
+                controlWebSocketRegistry.broadcastToAdmins(msg);
+                break;
+
+            case 2:
+                controlWebSocketRegistry.broadcastToOperators(msg);
+                break;
+
+            case 3:
+                controlWebSocketRegistry.broadcastToViewers(msg);
+                break;
+
+            case 4:
+                controlWebSocketRegistry.broadcastToAll(msg);
+                processDeviceMessage(msg);
+                break;
+
+            default:
+                break;
+        }
+    }
+    private void processDeviceMessage(JsonNode msg){
+        String type = msg.path("type").asText(null);
+        if (type == null) return;
+
+        switch (type){
+            case "info":
+                 deviceDetails= msg.get("data").asText("none");
+                break;
+
+            case "telem":
+//                logTelemetry(msg.get("data"));
+                break;
+
+            default:
+                break;
+        }
     }
 
 }

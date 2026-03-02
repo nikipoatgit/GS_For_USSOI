@@ -39,7 +39,7 @@ public class AuthGuardHandler extends SimpleChannelInboundHandler<FullHttpReques
         // User Api
         if (path.startsWith("/api/user")) {
 
-            if (path.equals("/api/user/login")) {
+            if (path.startsWith("/api/user/login")) {
                 ctx.fireChannelRead(req.retain());
                 return;
             }
@@ -59,7 +59,7 @@ public class AuthGuardHandler extends SimpleChannelInboundHandler<FullHttpReques
         if (path.startsWith("/api/device/")) {
 
             // authenticate endpoint is public
-            if (path.equals("/api/device/authenticate")) {
+            if (path.startsWith("/api/device/authenticate")) {
                 ctx.fireChannelRead(req.retain());
                 return;
             }
@@ -103,7 +103,7 @@ public class AuthGuardHandler extends SimpleChannelInboundHandler<FullHttpReques
     private void sendUserRedirect(ChannelHandlerContext ctx) {
         FullHttpResponse res = new DefaultFullHttpResponse(
                 HttpVersion.HTTP_1_1,
-                HttpResponseStatus.FOUND
+                HttpResponseStatus.UNAUTHORIZED
         );
         res.headers().set(HttpHeaderNames.LOCATION, "/");
         res.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);

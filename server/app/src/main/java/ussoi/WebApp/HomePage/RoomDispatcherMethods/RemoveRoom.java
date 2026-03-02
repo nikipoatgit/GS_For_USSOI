@@ -42,9 +42,7 @@ public class RemoveRoom implements RoomIntent {
             return;
         }
 
-        RoomHandler room = userSession.getRoomHandler();
-
-        if (room.removeRoom(roomId)){
+        if (userSession.removeRoom(roomId)){
             sendJson(ctx, HttpResponseStatus.OK, buildAckStatus(ACK,"Room","Room Removed",reqId),null);
         }
         else {

@@ -1,16 +1,12 @@
 package ussoi.Security.AuthenticationService;
 
-import io.netty.handler.codec.http.cookie.Cookie;
-import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
+import ussoi.SessionHandler.User.RolePolicy.Role;
+import ussoi.Utility.utilityMethods;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.sql.*;
-import java.util.Base64;
-import java.util.Set;
 
 import static ussoi.Storage.DB.Database.getConnection;
-import static ussoi.utilityMethods.getTimestamp;
+import static ussoi.Utility.utilityMethods.getTimestamp;
 
 /**
  * *****************************************************************************
@@ -31,7 +27,7 @@ import static ussoi.utilityMethods.getTimestamp;
 public class AuthService {
     private static final String TAG = "AuthService";
 
-    public static boolean authenticate(String user, String pass) {
+    public static boolean authenticateUser(String user, String pass) {
         String sql = "SELECT userPass_hash FROM usersIdAndPassword WHERE userId = ?";
 
         try (Connection conn = getConnection();
@@ -46,7 +42,7 @@ public class AuthService {
                 }
 
                 String storedHash = rs.getString("userPass_hash");
-                String incomingHash = hashString(pass);
+                String incomingHash = utilityMethods.hashString(pass);
                 return storedHash.equals(incomingHash);
 
             } catch (Exception e) {
@@ -59,13 +55,6 @@ public class AuthService {
         }
     }
 
-    // TODO : ADD salt
-    public static String hashString(String password) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
-        return Base64.getEncoder().encodeToString(hash);
-    }
-
     public static void setTestAdmin() throws Exception {
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement("""
@@ -76,7 +65,7 @@ public class AuthService {
 
             ps.setString(1, "zeke");
             ps.setString(2, "123");
-            ps.setString(3, hashString("123"));
+            ps.setString(3, utilityMethods.hashString("123"));
             ps.setString(4, "admin");
             ps.setString(5, getTimestamp());
 
@@ -85,7 +74,7 @@ public class AuthService {
     }
     public static boolean isUserValidSession(String cookieHeader) {
         // parse cookie header and validate session token
-        String session = extractSession(cookieHeader);
+        String session = utilityMethods.extractSession(cookieHeader);
         if (session != null) {
             return cookieSessionStore.doesUserTokenExist(session);
         }
@@ -93,22 +82,33 @@ public class AuthService {
     }
     public static boolean isDeviceValidSession(String cookieHeader) {
         // parse cookie header and validate session token
-        String session = extractSession(cookieHeader);
+        String session = utilityMethods.extractSession(cookieHeader);
         if (session != null) {
             return cookieSessionStore.doesDeviceTokenExist(session);
         }
         return false;
     }
 
-    public static String extractSession(String cookieHeader) {
-        if (cookieHeader == null) return null;
-        Set<Cookie> cookies = ServerCookieDecoder.STRICT.decode(cookieHeader);
-        for (Cookie c : cookies) {
-            if (c.name().equals("session")) {
-                return c.value();
-            }
-        }
-        return null;
-    }
+    public static Role getUserRole(String userId) {
+        String sql = "SELECT role FROM usersIdAndPassword WHERE userId = ?";
 
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, userId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    String roleString = rs.getString("role");
+                    return Role.valueOf(roleString);
+                } else {
+                    return Role.VIEWER;
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
