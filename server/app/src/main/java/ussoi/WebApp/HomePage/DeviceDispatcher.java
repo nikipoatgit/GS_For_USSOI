@@ -41,7 +41,7 @@ public class DeviceDispatcher {
             return;
         }
         if(intent.equals("getDevices")){
-            sendJson(ctx, HttpResponseStatus.OK,UserSessionRegistry.getInstance().getUserSession().getAllDevices(),null);
+            sendJson(ctx, HttpResponseStatus.OK,UserSessionRegistry.getInstance().getUserSession().getAllDeviceDetails(),null);
         }
         else{
             HttpResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST,"Invalid intend");

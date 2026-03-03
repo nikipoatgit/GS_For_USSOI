@@ -44,21 +44,26 @@ public class HandleDeviceAuth {
             String roomId = body.get("roomId").asText();
             String roomPwd = body.get("roomPwd").asText();
 
-            UserSession us = UserSessionRegistry.getInstance().getUserSession();
+            UserSession userSession = UserSessionRegistry.getInstance().getUserSession();
 
-            boolean valid = us.validateRoomExistanceAndPwd(roomId,roomPwd);
+            boolean valid = userSession.validateRoomExistenceAndPwd(roomId,roomPwd);
 
             if (valid) {
                 String newToken;
                 do {
                     newToken = generateSecureToken();
-                } while (doesDeviceTokenExist(newToken));
+                } while (doesDeviceTokenExistInDb(newToken));
 
-                String newDeviceId = generateSecureToken();
+                String newDeviceId;
 
-                addOrUpdateDeviceSessionToken(newToken,newDeviceId);
+                do {
+                    newDeviceId = generateSecureToken();
+                } while (doesDeviceIDExistInDb(newDeviceId));
 
-                if (us.addDeviceTODeviceSessionRegistry(roomId,roomPwd,newDeviceId)) {
+                addOrUpdateDeviceSessionTokenInDb(newToken,newDeviceId);
+
+                // room validation done earlier
+                if (userSession.addDeviceToRoom(roomId,newDeviceId)) {
 
                     // TODO FORCE ADD DEVICE AND REMOVE NON ACTIVE DEVICES
 
@@ -67,12 +72,12 @@ public class HandleDeviceAuth {
                     HttpResponseUtil.sendJson(ctx, HttpResponseStatus.OK, payload, null);
                 }
                 else {
-                    HttpResponseUtil.sendError(ctx,HttpResponseStatus.BAD_REQUEST,"Invalid Params");
+                    HttpResponseUtil.sendError(ctx,HttpResponseStatus.EXPECTATION_FAILED,"Room Not Valid");
                 }
 
             }
             else {
-                HttpResponseUtil.sendError(ctx,HttpResponseStatus.BAD_REQUEST,"Invalid Params");
+                HttpResponseUtil.sendError(ctx,HttpResponseStatus.BAD_REQUEST,"Invalid Room Params");
             }
 
         } catch (Exception e) {

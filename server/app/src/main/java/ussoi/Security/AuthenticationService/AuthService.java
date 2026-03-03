@@ -1,6 +1,6 @@
 package ussoi.Security.AuthenticationService;
 
-import ussoi.SessionHandler.User.RolePolicy.Role;
+import ussoi.Utility.Role;
 import ussoi.Utility.utilityMethods;
 
 import java.sql.*;
@@ -76,7 +76,7 @@ public class AuthService {
         // parse cookie header and validate session token
         String session = utilityMethods.extractSession(cookieHeader);
         if (session != null) {
-            return cookieSessionStore.doesUserTokenExist(session);
+            return cookieSessionStore.doesUserTokenExistInDb(session);
         }
         return false;
     }
@@ -84,7 +84,7 @@ public class AuthService {
         // parse cookie header and validate session token
         String session = utilityMethods.extractSession(cookieHeader);
         if (session != null) {
-            return cookieSessionStore.doesDeviceTokenExist(session);
+            return cookieSessionStore.doesDeviceTokenExistInDb(session);
         }
         return false;
     }

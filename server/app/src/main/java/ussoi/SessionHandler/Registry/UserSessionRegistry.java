@@ -1,6 +1,6 @@
 package ussoi.SessionHandler.Registry;
 
-import ussoi.SessionHandler.User.RolePolicy.Role;
+import ussoi.Utility.Role;
 import ussoi.SessionHandler.User.UserSession;
 
 import java.util.Map;

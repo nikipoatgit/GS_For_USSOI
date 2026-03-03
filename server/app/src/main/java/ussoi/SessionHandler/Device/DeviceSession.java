@@ -1,11 +1,9 @@
 package ussoi.SessionHandler.Device;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import ussoi.SessionHandler.User.RolePolicy.Role;
+import ussoi.Utility.Role;
 import ussoi.WebSocket.Registry.ControlWebSocketRegistry;
 
 import static ussoi.Utility.utilityMethods.parseJsonFromBody;
@@ -26,19 +24,20 @@ import static ussoi.Utility.utilityMethods.parseJsonFromBody;
  * <p>
  * *****************************************************************************
  */
-public class DeviceSession extends DeviceServices {
+public class DeviceSession {
+    public final String deviceId;
+    public volatile String deviceName;
+    protected String deviceDetails;
 
     private final ControlWebSocketRegistry controlWebSocketRegistry;
 
-    public DeviceSession(String roomId, String roomName, String deviceId) {
-        this.roomId = roomId;
-        this.roomName = roomName;
+    public DeviceSession(String deviceId) {
         this.deviceId = deviceId;
         controlWebSocketRegistry = new ControlWebSocketRegistry();
     }
 
     // assuming user Exist in db
-    public void addUserToUserWsRegistry(String userId, Channel channel, Role role){
+    public void addUser(String userId, Channel channel, Role role){
         controlWebSocketRegistry.registerUser(userId,channel,role);
     }
 
@@ -47,7 +46,7 @@ public class DeviceSession extends DeviceServices {
     }
 
     // assuming user has done this checkIfDevicerExist
-    public void addDeviceToDeviceWs(Channel channel){
+    public void addDevice(Channel channel){
         controlWebSocketRegistry.registerDevice(channel);
     }
 

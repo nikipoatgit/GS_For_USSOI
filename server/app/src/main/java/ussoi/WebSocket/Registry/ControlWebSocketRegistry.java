@@ -6,8 +6,8 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import ussoi.SessionHandler.User.RolePolicy.Role;
-import ussoi.WebSocket.Dispachers.ControlMessageDispatcher;
+import ussoi.Utility.Role;
+import ussoi.Utility.ControlMessageDispatcher;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

@@ -38,7 +38,7 @@ public class HandleUserLogin {
         String sessionToken = extractSession(cookieHeader);
 
         // 1If session already valid return OK
-        if (cookieSessionStore.doesUserTokenExist(sessionToken)) {
+        if (cookieSessionStore.doesUserTokenExistInDb(sessionToken)) {
             HttpResponseUtil.sendJson(ctx, HttpResponseStatus.OK, Map.of("ok", true),null);
             return;
         }
@@ -50,13 +50,13 @@ public class HandleUserLogin {
             String newToken;
             do {
                 newToken = generateSecureToken();
-            } while (doesUserTokenExist(newToken));
+            } while (doesUserTokenExistInDb(newToken));
 
             String user = body.get("userId").asText().trim();
             String cookie = "session=" + newToken +"; HttpOnly; SameSite=Strict; Max-Age=604800; Path=/";
 
             //  add token to db
-            addOrUpdateUserSessionToken(newToken,user);
+            addOrUpdateUserSessionTokenInDb(newToken,user);
             HttpResponseUtil.sendJson(ctx,HttpResponseStatus.OK, Map.of("ok", true), cookie);
             return;
         }

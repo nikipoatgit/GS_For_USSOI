@@ -1,9 +1,12 @@
 package ussoi.SessionHandler.User;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import ussoi.SessionHandler.Device.DeviceSession;
-import ussoi.SessionHandler.Registry.DeviceSessionRegistry;
-import ussoi.SessionHandler.User.Room.RoomHandler;
+import ussoi.SessionHandler.Registry.RoomSessionRegistry;
+import ussoi.SessionHandler.Room.RoomSession;
 
 /**
  * *****************************************************************************
@@ -22,44 +25,74 @@ import ussoi.SessionHandler.User.Room.RoomHandler;
  * *****************************************************************************
  */
 public class UserServices {
-    private final RoomHandler roomHandler;
-    private final DeviceSessionRegistry deviceSessionRegistry;
+
+    private final RoomSessionRegistry roomSessionRegistry;
 
     public UserServices(){
-        roomHandler = new RoomHandler();
-        deviceSessionRegistry = new DeviceSessionRegistry();
+        roomSessionRegistry = new RoomSessionRegistry();
     }
 
-    //  Room Related Methods
     public boolean addRoom(String id, String name, String password) {
-        return roomHandler.addRoom(id, name, password);
+        return roomSessionRegistry.register(id, new RoomSession(id,name,password));
     }
+
     public boolean removeRoom(String id) {
-        return roomHandler.removeRoom(id);
-    }
-    public JsonNode getRoomsJson() {
-        return roomHandler.getRoomsJson();
-    }
-    public boolean validateRoomExistanceAndPwd(String roomId, String roomPwd) {
-        return roomHandler.validateRoomExistanceAndPwd(roomId,roomPwd);
+        return roomSessionRegistry.unregister(id);
     }
 
-    // Device Related Methods
-    public boolean addDeviceTODeviceSessionRegistry(String roomId, String roomName, String deviceId){
-        return deviceSessionRegistry.addDeviceTODeviceSessionRegistry(roomId,roomName,deviceId);
+    public JsonNode getRoomDetails() {
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode array = mapper.createArrayNode();
+
+        for (RoomSession room : roomSessionRegistry.getAll().values()) {
+            ObjectNode node = mapper.createObjectNode();
+            node.put("roomId", room.RoomId);
+            node.put("roomName", room.RoomName);
+            array.add(node);
+        }
+        return array;
     }
-    public boolean removeDeviceFromDeviceSessionRegistry(String deviceId){
-        return  deviceSessionRegistry.removeDeviceFromDeviceSessionRegistry(deviceId);
-    }
-    public boolean isDeviceInDeviceSessionRegistry(String deviceId){
-        return deviceSessionRegistry.isDeviceInDeviceSessionRegistry(deviceId);
-    }
-    public DeviceSession getDeviceSession(String deviceId) {
-        return deviceSessionRegistry.getDeviceSession(deviceId);
+    public JsonNode getAllDeviceDetails(){
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode array = mapper.createArrayNode();
+
+        for (RoomSession room : roomSessionRegistry.getAll().values()) {
+            ObjectNode node = mapper.createObjectNode();
+            node.put("roomId", room.RoomId);
+            node.put("roomName", room.RoomName);
+            node.set("devices",room.getDevices());
+            array.add(node);
+        }
+        return array;
     }
 
-    public JsonNode getAllDevices() {
-        return deviceSessionRegistry.getAllDevices();
+    // note we dont validate RoomId and pass
+    public Boolean addDeviceToRoom(String roomId , String deviceId){
+        RoomSession room = roomSessionRegistry.getSession(roomId);
+        if (room != null){
+            room.addDevice(deviceId);
+            return true;
+        }
+        return false;
     }
 
+    public RoomSession getRoomSession(String roomId){
+        return roomSessionRegistry.getSession(roomId);
+    }
+
+    public DeviceSession getDeviceSession(String deviceId){
+        for (RoomSession room : roomSessionRegistry.getAll().values()) {
+            DeviceSession session = room.getDeviceSession(deviceId);
+            if (session != null) return session;
+        }
+        return null;
+    }
+
+    public boolean validateRoomExistenceAndPwd(String roomId, String roomPwd) {
+        RoomSession room =  roomSessionRegistry.getSession(roomId);
+        if (room != null){
+            return room.validatePassword(roomPwd);
+        }
+        return false;
+    }
 }

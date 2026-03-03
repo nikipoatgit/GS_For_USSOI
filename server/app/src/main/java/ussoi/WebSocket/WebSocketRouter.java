@@ -7,9 +7,9 @@ import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import ussoi.SessionHandler.Device.DeviceSession;
 import ussoi.SessionHandler.Registry.UserSessionRegistry;
-import ussoi.WebSocket.Handler.DeviceControlWebSocketHandler;
-import ussoi.WebSocket.Handler.DeviceStreamWebSocketHandler;
-import ussoi.WebSocket.Handler.UserControlWebSocketHandler;
+import ussoi.WebSocket.Handler.Device.DeviceControlWebSocketHandler;
+import ussoi.WebSocket.Handler.Device.DeviceStreamWebSocketHandler;
+import ussoi.WebSocket.Handler.User.UserControlWebSocketHandler;
 
 import java.util.List;
 
@@ -71,7 +71,7 @@ public class WebSocketRouter extends ChannelInboundHandlerAdapter {
                     .findFirst()
                     .orElse(null);
 
-            if (!doesDeviceIDExist(deviceId)) {
+            if (!doesDeviceIDExistInDb(deviceId)) {
                 ctx.close();
                 return;
             }
@@ -83,7 +83,7 @@ public class WebSocketRouter extends ChannelInboundHandlerAdapter {
                 return;
             }
 
-            String userId = getUserIdFromSession(token);
+            String userId = getUserIdFromSessionInDb(token);
             if (userId == null || deviceSession.checkIfUserExist(userId)) {
                 ctx.close();
                 return;
@@ -94,8 +94,8 @@ public class WebSocketRouter extends ChannelInboundHandlerAdapter {
         }
         else if (uri.startsWith("/ws/device/control")) {
 
-            String deviceId = getDeviceIdFromSession(token);
-            if (deviceId == null || registry.getUserSession().isDeviceInDeviceSessionRegistry(deviceId)) {
+            String deviceId = getDeviceIdFromSessionInDb(token);
+            if (deviceId == null || registry.getUserSession().getDeviceSession(deviceId) == null) {
                 ctx.close();
                 return;
             }

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import ussoi.Security.AuthenticationService.HttpResponseUtil;
-import ussoi.SessionHandler.User.Room.RoomHandler;
 import ussoi.SessionHandler.User.UserSession;
 
 import static ussoi.Security.AuthorizationService.AckAndNack.AckStatus.ACK;

@@ -26,7 +26,7 @@ import static ussoi.Utility.utilityMethods.getTimestamp;
 public class cookieSessionStore {
     private static final String TAG = "SessionStore";
 
-    public static String getUserIdFromSession(String sessionKey) {
+    public static String getUserIdFromSessionInDb(String sessionKey) {
         final String sql =
                 "SELECT userId FROM userSessions WHERE session_cookie = ? LIMIT 1";
 
@@ -45,7 +45,7 @@ public class cookieSessionStore {
         }
     }
 
-    public static boolean doesUserTokenExist(String token) {
+    public static boolean doesUserTokenExistInDb(String token) {
 
         if (token == null || token.isBlank()) {
             return false;
@@ -67,7 +67,7 @@ public class cookieSessionStore {
         }
     }
 
-    public static void addOrUpdateUserSessionToken(String sessionKey, String userId) {
+    public static void addOrUpdateUserSessionTokenInDb(String sessionKey, String userId) {
         final String deleteOld =
                 "DELETE FROM userSessions WHERE userId = ?";
         final String insert =
@@ -99,7 +99,7 @@ public class cookieSessionStore {
             throw new RuntimeException("Failed to create session", e);
         }
     }
-    public static String getDeviceIdFromSession(String token) {
+    public static String getDeviceIdFromSessionInDb(String token) {
 
         if (token == null || token.isBlank()) {
             return null;
@@ -125,7 +125,7 @@ public class cookieSessionStore {
         }
     }
 
-    public static boolean doesDeviceIDExist(String deviceId) {
+    public static boolean doesDeviceIDExistInDb(String deviceId) {
 
         if (deviceId == null || deviceId.isBlank()) {
             return false;
@@ -147,7 +147,7 @@ public class cookieSessionStore {
         }
     }
 
-    public static boolean doesDeviceTokenExist(String token) {
+    public static boolean doesDeviceTokenExistInDb(String token) {
 
         if (token == null || token.isBlank()) {
             return false;
@@ -169,7 +169,7 @@ public class cookieSessionStore {
         }
     }
 
-    public static void addOrUpdateDeviceSessionToken(String newToken, String newDeviceId) {
+    public static void addOrUpdateDeviceSessionTokenInDb(String newToken, String newDeviceId) {
 
         String deleteSql = "DELETE FROM deviceSessions WHERE deviceId = ?";
         String insertSql = "INSERT INTO deviceSessions (session_cookie, deviceId, created_at) VALUES (?, ?, ?)";

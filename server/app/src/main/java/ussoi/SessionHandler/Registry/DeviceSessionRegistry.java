@@ -1,9 +1,9 @@
 package ussoi.SessionHandler.Registry;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import ussoi.SessionHandler.Device.DeviceSession;
+import ussoi.Utility.SessionRegistry;
+
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,34 +23,37 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * *****************************************************************************
  */
-public class DeviceSessionRegistry {
+public class DeviceSessionRegistry implements SessionRegistry<String, DeviceSession> {
+
     private final Map<String, DeviceSession> deviceMap = new ConcurrentHashMap<>();
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    public DeviceSessionRegistry(){
+    @Override
+    public boolean register(String deviceId, DeviceSession session) {
+        return deviceMap.putIfAbsent(deviceId, session) == null;
     }
 
-    public boolean addDeviceTODeviceSessionRegistry(String roomId, String roomName, String deviceId){
-        return deviceMap.putIfAbsent(deviceId, new DeviceSession( roomId,  roomName,  deviceId)) == null;
+    @Override
+    public boolean unregister(String deviceId) {
+        return deviceMap.remove(deviceId) != null;
     }
 
-    public boolean removeDeviceFromDeviceSessionRegistry(String deviceId){
-        return  deviceMap.remove(deviceId) != null;
-    }
-
-    public boolean isDeviceInDeviceSessionRegistry(String deviceId){
+    @Override
+    public boolean isRegistered(String deviceId) {
         return deviceMap.containsKey(deviceId);
     }
 
-    public DeviceSession getDeviceSession(String deviceId) {
+    @Override
+    public DeviceSession getSession(String deviceId) {
         return deviceMap.get(deviceId);
     }
 
-    public JsonNode getAllDevices() {
-        ArrayNode array = MAPPER.createArrayNode();
-        for (DeviceSession session : deviceMap.values()) {
-            array.add(session.getDeviceRoom());
-        }
-        return array;
+    @Override
+    public Map<String, DeviceSession> getAll() {
+        return Collections.unmodifiableMap(deviceMap);
+    }
+
+    @Override
+    public int registrySize() {
+        return deviceMap.size();
     }
 }

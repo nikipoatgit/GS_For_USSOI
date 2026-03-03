@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import ussoi.Security.AuthenticationService.HttpResponseUtil;
-import ussoi.SessionHandler.User.Room.RoomHandler;
 import ussoi.SessionHandler.User.UserSession;
 
 /**
@@ -27,6 +26,6 @@ public class GetRooms implements RoomIntent {
 
     @Override
     public void handle(ChannelHandlerContext ctx, JsonNode json, UserSession userSession) {
-        HttpResponseUtil.sendJson(ctx, HttpResponseStatus.OK, userSession.getRoomsJson(),null);
+        HttpResponseUtil.sendJson(ctx, HttpResponseStatus.OK, userSession.getRoomDetails(),null);
     }
 }

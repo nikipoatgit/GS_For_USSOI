@@ -1,8 +1,5 @@
 package ussoi.SessionHandler.User;
 
-import ussoi.SessionHandler.Registry.DeviceSessionRegistry;
-import ussoi.SessionHandler.User.Room.RoomHandler;
-
 /**
  * *****************************************************************************
  *
@@ -20,8 +17,6 @@ import ussoi.SessionHandler.User.Room.RoomHandler;
  * *****************************************************************************
  */
 public class UserSession extends UserServices{
-
     public UserSession(){}
-
 
 }
