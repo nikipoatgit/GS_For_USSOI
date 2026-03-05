@@ -1,0 +1,38 @@
+.admin-container{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+}
+
+.top-bar{
+    height:60px;
+    border-bottom:2px solid black;
+    display:flex;
+    align-items:center;
+    padding-left:20px;
+}
+
+.main{
+    flex:1;
+    display:flex;
+}
+
+.sidebar{
+    width:200px;
+    border-right:2px solid black;
+    display:flex;
+    flex-direction:column;
+}
+
+.sidebar button{
+    padding:10px;
+    border:none;
+    border-bottom:1px solid #ccc;
+    background:white;
+    cursor:pointer;
+}
+
+.content{
+    flex:1;
+    padding:20px;
+}
