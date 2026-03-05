@@ -1,11 +1,21 @@
 package ussoi.SessionHandler.Device;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import ussoi.Utility.Role;
 import ussoi.WebSocket.Registry.ControlRegistry;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import static ussoi.Security.AuthenticationService.AuthService.buildControlUsers;
+import static ussoi.Storage.DB.Database.getConnection;
 import static ussoi.Utility.utilityMethods.parseJsonFromBody;
 
 /**
@@ -34,6 +44,10 @@ public class DeviceSession {
     public DeviceSession(String deviceId) {
         this.deviceId = deviceId;
         controlWebSocketRegistry = new ControlRegistry();
+    }
+
+    public boolean deviceStatus(){
+        controlWebSocketRegistry.isDeviceConnected();
     }
 
     // assuming user Exist in db
@@ -108,6 +122,40 @@ public class DeviceSession {
             default:
                 break;
         }
+    }
+
+    public JsonNode getControlWsDetails() {
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode root = mapper.createObjectNode();
+
+        root.put("d_id", deviceId);
+        root.put("d_name", deviceName);
+
+        ObjectNode control = buildControlUsers((ArrayNode) controlWebSocketRegistry.getControlState(),controlWebSocketRegistry.isDeviceConnected());
+
+        root.set("control", control);
+
+        // dummy stream
+        ObjectNode stream = mapper.createObjectNode();
+        ArrayNode streamUsers = mapper.createArrayNode();
+        streamUsers.add(mapper.createObjectNode().put("uid", "dummy1").put("uname", "dummy1"));
+        streamUsers.add(mapper.createObjectNode().put("uid", "dummy2").put("uname", "dummy2"));
+
+        stream.set("users", streamUsers);
+        stream.put("device", true);
+
+        root.set("stream", stream);
+
+        // dummy data
+        ArrayNode data = mapper.createArrayNode();
+
+        data.add(mapper.createObjectNode().put("uid", "dummy1").put("uname", "dummy1"));
+        data.add(mapper.createObjectNode().put("uid", "dummy2").put("uname", "dummy2"));
+
+        root.set("data", data);
+
+        return root;
     }
 
 }

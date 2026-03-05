@@ -43,7 +43,8 @@ public class utilityMethods {
         try (ByteBufInputStream in = new ByteBufInputStream(content, false)) {
             return MAPPER.readTree(in);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            // TODO HANDLE IT
+           return null;
         }
     }
 

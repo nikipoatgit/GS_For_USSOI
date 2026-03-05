@@ -1,6 +1,9 @@
 package ussoi.WebSocket.Registry;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.channel.Channel;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
@@ -172,4 +175,15 @@ public final class ControlRegistry implements ControlMessageDispatcher {
         level3Channels.writeAndFlush(frame);
     }
 
+    public JsonNode getControlState() {
+
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode users = mapper.createArrayNode();
+
+        for (String uid : userChannels.keySet()) {
+            users.add(uid);
+        }
+
+        return users;
+    }
 }

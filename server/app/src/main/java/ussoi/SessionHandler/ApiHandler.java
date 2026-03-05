@@ -35,6 +35,9 @@ public class ApiHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final Map<String, ApiRouteHandler> API_ROUTES = new HashMap<>();
 
     static {
+        //admin api
+        API_ROUTES.put(key(HttpMethod.POST, "/api/admin"),HandleUserLogin::handleLogin);
+
         // user Api
         API_ROUTES.put(key(HttpMethod.POST, "/api/user/login"),HandleUserLogin::handleLogin);
 

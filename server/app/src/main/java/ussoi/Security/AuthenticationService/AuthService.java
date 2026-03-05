@@ -1,5 +1,9 @@
 package ussoi.Security.AuthenticationService;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import ussoi.Utility.Role;
 import ussoi.Utility.utilityMethods;
 
@@ -129,4 +133,63 @@ public class AuthService {
             throw new RuntimeException(e);
         }
     }
+
+    public static ObjectNode buildControlUsers(ArrayNode uids,boolean isDeviceAlive) {
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        ArrayNode admins = mapper.createArrayNode();
+        ArrayNode operators = mapper.createArrayNode();
+        ArrayNode viewers = mapper.createArrayNode();
+
+        String sql = "SELECT username, role FROM usersIdAndPassword WHERE userId = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            for (JsonNode uidNode : uids) {
+
+                String uid = uidNode.asText();
+                ps.setString(1, uid);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    if (rs.next()) {
+
+                        String uname = rs.getString("username");
+                        String role = rs.getString("role");
+
+                        ObjectNode user = mapper.createObjectNode();
+                        user.put("uid", uid);
+                        user.put("uname", uname);
+
+                        switch (role.toUpperCase()) {
+                            case "ADMIN":
+                                admins.add(user);
+                                break;
+
+                            case "OPERATOR":
+                                operators.add(user);
+                                break;
+
+                            default:
+                                viewers.add(user);
+                        }
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        ObjectNode control = mapper.createObjectNode();
+        control.set("admins", admins);
+        control.set("operators", operators);
+        control.set("viewers", viewers);
+        control.put("device", isDeviceAlive);
+
+        return control;
+    }
+
 }

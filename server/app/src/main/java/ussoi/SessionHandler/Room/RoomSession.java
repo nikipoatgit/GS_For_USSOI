@@ -60,11 +60,30 @@ public class RoomSession {
 
         for (DeviceSession device: deviceSessionRegistry.getAll().values()){
             ObjectNode node = mapper.createObjectNode();
-            node.put("deviceName", device.deviceId);
-            node.put("deviceId", device.deviceId);
+            node.put("d_Name", device.deviceId);
+            node.put("d_Id", device.deviceName);
+            node.put("d_Stat", device.deviceStatus());
             array.add(node);
         }
         return array;
     }
 
+    public JsonNode getRoomWsDetails() {
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        ObjectNode roomNode = mapper.createObjectNode();
+        ArrayNode devicesArray = mapper.createArrayNode();
+
+        roomNode.put("r_id", RoomId);
+        roomNode.put("r_name", RoomName);
+
+        for (DeviceSession device : deviceSessionRegistry.getAll().values()) {
+            devicesArray.add(device.getControlWsDetails());
+        }
+
+        roomNode.set("devices", devicesArray);
+
+        return roomNode;
+    }
 }

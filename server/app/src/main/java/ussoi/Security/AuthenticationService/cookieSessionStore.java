@@ -1,5 +1,7 @@
 package ussoi.Security.AuthenticationService;
 
+import ussoi.Utility.Role;
+
 import java.security.SecureRandom;
 import java.sql.*;
 import java.util.Base64;
@@ -42,6 +44,30 @@ public class cookieSessionStore {
         } catch (SQLException e) {
             //TODO log ??
             throw new RuntimeException("Failed to fetch userId from session", e);
+        }
+    }
+
+    public static Role getUserRoleFromSessionInDb(String sessionKey) {
+        String sql = "SELECT role FROM usersIdAndPassword WHERE session_cookie = ? LIMIT 1";
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, sessionKey);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    String roleString = rs.getString("role");
+                    return  Role.valueOf(roleString.toUpperCase());
+                } else {
+                    return Role.VIEWER;
+                }
+            }
+
+        } catch (SQLException e) {
+            //TODO log ??
+            throw new RuntimeException(e);
         }
     }
 

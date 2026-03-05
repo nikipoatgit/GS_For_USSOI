@@ -29,10 +29,7 @@ public class AckAndNack {
 
     private AckAndNack() {}
 
-    public static JsonNode buildAckStatus(AckStatus status,
-                                 String type,
-                                 String message,
-                                          String reqId) {
+    public static JsonNode buildAckStatus(AckStatus status,String type,String message,String reqId) {
 
         ObjectNode root = MAPPER.createObjectNode();
 
