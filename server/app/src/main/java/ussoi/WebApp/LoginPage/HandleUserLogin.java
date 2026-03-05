@@ -3,7 +3,7 @@ package ussoi.WebApp.LoginPage;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
-import ussoi.Security.AuthenticationService.HttpResponseUtil;
+import ussoi.Http.HttpResponseUtil;
 import ussoi.Security.AuthenticationService.cookieSessionStore;
 
 import java.util.Map;

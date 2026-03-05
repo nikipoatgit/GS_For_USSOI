@@ -32,8 +32,11 @@ public class UserServices {
         roomSessionRegistry = new RoomSessionRegistry();
     }
 
-    public boolean addRoom(String id, String name, String password) {
-        return roomSessionRegistry.register(id, new RoomSession(id,name,password));
+    public boolean addRoom(String roomId, String roomName, String roomPassword) {
+        if (roomSessionRegistry.checkIfRoomNameExist(roomName)){
+            return false;
+        }
+        return roomSessionRegistry.register(roomId, new RoomSession(roomId,roomName,roomPassword));
     }
 
     public boolean removeRoom(String id) {

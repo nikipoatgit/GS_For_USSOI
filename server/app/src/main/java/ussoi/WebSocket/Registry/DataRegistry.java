@@ -16,5 +16,5 @@ package ussoi.WebSocket.Registry;
  * <p>
  * *****************************************************************************
  */
-public class DataWebSocketRegistry {
+public class DataRegistry {
 }

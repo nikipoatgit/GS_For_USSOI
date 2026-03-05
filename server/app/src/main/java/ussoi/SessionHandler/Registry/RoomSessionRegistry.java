@@ -1,5 +1,6 @@
 package ussoi.SessionHandler.Registry;
 
+import ussoi.SessionHandler.Device.DeviceSession;
 import ussoi.SessionHandler.Room.RoomSession;
 import ussoi.Utility.SessionRegistry;
 
@@ -31,7 +32,6 @@ public class RoomSessionRegistry implements SessionRegistry<String, RoomSession>
     public boolean register(String roomId, RoomSession session) {
         return roomMap.putIfAbsent(roomId, session) == null;
     }
-
     @Override
     public boolean unregister(String roomId) {
         return roomMap.remove(roomId) != null;
@@ -56,5 +56,15 @@ public class RoomSessionRegistry implements SessionRegistry<String, RoomSession>
     public int registrySize() {
         return roomMap.size();
     }
+
+    public Boolean checkIfRoomNameExist(String roomName){
+        for (RoomSession room : roomMap.values()) {
+            if (room.RoomName.equals(roomName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
 }

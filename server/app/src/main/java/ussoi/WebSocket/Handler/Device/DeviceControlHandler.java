@@ -22,43 +22,50 @@ import ussoi.SessionHandler.Registry.UserSessionRegistry;
  * <p>
  * *****************************************************************************
  */
-public class DeviceControlWebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+public class DeviceControlHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
     private final String deviceId ;
 
-    public DeviceControlWebSocketHandler(String deviceId) {
+    public DeviceControlHandler(String deviceId) {
         this.deviceId = deviceId;
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,WebSocketFrame frame) {
 
-        if (frame instanceof BinaryWebSocketFrame binaryFrame) {
-            handleBinary(ctx, binaryFrame.content());
-        } else if (frame instanceof CloseWebSocketFrame) {
-            ctx.close();
-        } else if (frame instanceof PingWebSocketFrame ping) {
-            ctx.writeAndFlush(new PongWebSocketFrame(ping.content().retain()));
+        switch (frame) {
+            case TextWebSocketFrame textFrame ->handleText(ctx, textFrame.text());
+            case BinaryWebSocketFrame binaryFrame -> handleBinary(ctx, binaryFrame.content());
+            case CloseWebSocketFrame closeWebSocketFrame -> ctx.close();
+            case PingWebSocketFrame ping -> ctx.writeAndFlush(new PongWebSocketFrame(ping.content().retain()));
+            default -> {
+            }
         }
+    }
+
+    private void handleText(ChannelHandlerContext ctx, String message) {
+        System.out.println("Received text: " + message);
     }
 
     private void handleBinary(ChannelHandlerContext ctx, ByteBuf buf) {
        try{
+           System.out.println("handleBinary:  msg from device ");
            UserSessionRegistry.getInstance().getUserSession().getDeviceSession(deviceId).processIncomingDeviceMessage(buf);
-       }
-       finally {
-           buf.release();
+       } catch (Exception e) {
+           // TODO LOG
+           System.out.println("Failed to process binary message for deviceId="+ deviceId + " " + e);
        }
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) {
+    public void handlerAdded(ChannelHandlerContext ctx) {
         // connection established
+        try {
+            System.out.println("Device WS connected");
         UserSessionRegistry.getInstance().getUserSession().getDeviceSession(deviceId).addDevice(ctx.channel());
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        // cleanup
+        } catch (Exception e) {
+            // TODO LOG
+            System.out.println("Failed to connect ws for deviceId="+ deviceId + " " + e);
+        }
     }
 
     @Override

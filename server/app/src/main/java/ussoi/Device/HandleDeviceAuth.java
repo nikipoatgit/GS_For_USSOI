@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import ussoi.Security.AuthenticationService.HttpResponseUtil;
+import ussoi.Http.HttpResponseUtil;
 import ussoi.SessionHandler.Registry.UserSessionRegistry;
 import ussoi.SessionHandler.User.UserSession;
 
@@ -49,7 +49,8 @@ public class HandleDeviceAuth {
             boolean valid = userSession.validateRoomExistenceAndPwd(roomId,roomPwd);
 
             if (valid) {
-                String newToken;
+                String newToken ;
+                // TODO REMOVE COMMENTS IN PROD
                 do {
                     newToken = generateSecureToken();
                 } while (doesDeviceTokenExistInDb(newToken));
@@ -81,6 +82,7 @@ public class HandleDeviceAuth {
             }
 
         } catch (Exception e) {
+            System.out.println(e);
             HttpResponseUtil.sendError(ctx,HttpResponseStatus.BAD_REQUEST,"Invalid JSON");
         }
     }

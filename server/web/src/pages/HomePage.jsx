@@ -1,45 +1,23 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./HomePage.css";
 
 export default function HomePage() {
+
     const [rooms, setRooms] = useState([]);
     const [devices, setDevices] = useState([]);
     const [selectedRoom, setSelectedRoom] = useState(null);
 
+    const navigate = useNavigate();
+
     useEffect(() => {
-        loadRooms();
         loadDevices();
     }, []);
 
-    const loadRooms = async () => {
-        try {
-            const res = await fetch("/api/handleRooms", {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    type: "room",
-                    reqId: Date.now(),
-                    intent: "getRoom"
-                })
-            });
-
-            if (!res.ok) {
-                console.error("Failed to load rooms:", res.status);
-                return;
-            }
-
-            const data = await res.json();
-            setRooms(data);
-
-        } catch (err) {
-            console.error("Network error:", err);
-        }
-    };
-
     const loadDevices = async () => {
         try {
-            const res = await fetch("/api/getDevices", {
+
+            const res = await fetch("/api/user/devices", {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -50,12 +28,20 @@ export default function HomePage() {
             });
 
             if (!res.ok) {
-                console.error("Failed to load devices:", res.status);
+                console.error("Device request failed", res.status);
                 return;
             }
 
             const data = await res.json();
+
             setDevices(data);
+
+            const extractedRooms = data.map(r => ({
+                roomId: r.roomId,
+                roomName: r.roomName
+            }));
+
+            setRooms(extractedRooms);
 
         } catch (err) {
             console.error("Network error:", err);
@@ -63,6 +49,7 @@ export default function HomePage() {
     };
 
     const addRoom = async () => {
+
         const roomName = prompt("Room Name");
         const roomId = prompt("Room ID");
         const roomPassword = prompt("Password");
@@ -75,49 +62,80 @@ export default function HomePage() {
             intent: "addRoom",
             roomId,
             roomName,
-            roomPassword,
+            roomPassword
         };
 
-        await fetch("/api/handleRooms", {
+        const res = await fetch("/api/user/rooms", {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
+            body: JSON.stringify(body)
         });
 
-        loadRooms();
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        if (data.status === "ACK") {
+            loadDevices();
+        }
     };
 
     const removeRoom = async (roomId) => {
+
         const body = {
             type: "room",
             reqId: Date.now(),
             intent: "removeRoom",
-            roomId,
+            roomId
         };
 
-        await fetch("/api/handleRooms", {
+        const res = await fetch("/api/user/rooms", {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
+            body: JSON.stringify(body)
         });
 
-        loadRooms();
-        setSelectedRoom(null);
+        if (res.ok) {
+            loadDevices();
+            setSelectedRoom(null);
+        }
     };
 
-    const filteredDevices = selectedRoom
-        ? devices.filter(d => d.roomId === selectedRoom)
-        : devices;
+    const logout = async () => {
+
+        try {
+            await fetch("/logout", {
+                method: "POST",
+                credentials: "include"
+            });
+        } catch {}
+
+        document.cookie =
+            "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+        window.location.href = "/login";
+    };
+
+    const filteredDevices = devices
+        .filter(room => !selectedRoom || room.roomId === selectedRoom)
+        .flatMap(room =>
+            room.devices.map(device => ({
+                ...device,
+                roomName: room.roomName
+            }))
+        );
 
     return (
         <div className="home-container">
 
             <div className="sidebar">
+
                 <h3>Rooms</h3>
 
                 <div className="room-list">
+
                     {rooms.map(room => (
                         <div
                             key={room.roomId}
@@ -126,7 +144,9 @@ export default function HomePage() {
                             }`}
                             onClick={() => setSelectedRoom(room.roomId)}
                         >
+
                             <span>{room.roomName}</span>
+
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -135,39 +155,58 @@ export default function HomePage() {
                             >
                                 ×
                             </button>
+
                         </div>
                     ))}
+
                 </div>
 
                 <button className="add-room-btn" onClick={addRoom}>
                     Add +
                 </button>
+
             </div>
 
             <div className="main-content">
 
                 <div className="top-bar">
+
                     <h2>USSOI</h2>
-                    <button
-                        onClick={() =>
-                            fetch("/logout", { method: "POST", credentials: "include" })
-                        }
-                    >
+
+                    <button onClick={logout}>
                         Logout
                     </button>
+
                 </div>
 
                 <div className="device-grid">
-                    {filteredDevices.map((device, index) => (
-                        <div key={index} className="device-card">
-                            <p><strong>Room:</strong> {device.roomName}</p>
-                            <p><strong>Device:</strong> {device.deviceId}</p>
-                            <p className="small">Connected since ...</p>
+
+                    {filteredDevices.map(device => (
+                        <div
+                            key={device.deviceId}
+                            className="device-card"
+                            onClick={() =>  window.open(`/Device/${device.deviceId}`)}
+                        >
+
+                            <p>
+                                <strong>Room:</strong> {device.roomName}
+                            </p>
+
+                            <p>
+                                <strong>Device:</strong> {device.deviceId}
+                            </p>
+
+                            <p className="small">
+                                Connected since ...
+                            </p>
+
                         </div>
                     ))}
+
                 </div>
 
             </div>
+
         </div>
     );
 }

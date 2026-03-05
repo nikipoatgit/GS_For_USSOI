@@ -10,7 +10,7 @@ export default function LoginPage() {
     useEffect(() => {
         const checkSession = async () => {
             try {
-                const res = await fetch("/api/login", {
+                const res = await fetch("/api/user/login", {
                     method: "POST",   // your merged endpoint
                     credentials: "include"
                 });
@@ -31,7 +31,7 @@ export default function LoginPage() {
         const data = new FormData(e.target);
 
         try {
-            const res = await fetch("/api/login", {
+            const res = await fetch("/api/user/login", {
                 method: "POST",
                 credentials: "include",
                 body: JSON.stringify({

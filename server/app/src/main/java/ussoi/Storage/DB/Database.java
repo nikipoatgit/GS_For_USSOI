@@ -7,7 +7,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import static ussoi.Security.AuthenticationService.AuthService.setTestAdmin;
+import static ussoi.Security.AuthenticationService.AuthService.setTestUsers;
 
 /**
  * *****************************************************************************
@@ -68,7 +68,7 @@ public final class Database {
             """);
 
         }
-        setTestAdmin();
+        setTestUsers();
     }
 
 

@@ -1,11 +1,11 @@
-package ussoi.Http.HttpError;
+package ussoi.WebSocket.Registry;
 
 /**
  * *****************************************************************************
  *
  * @author nikhi
  * *****************************************************************************
- * @file ErrorResponse.java
+ * @file StreamWebSocketRegistry.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -16,14 +16,5 @@ package ussoi.Http.HttpError;
  * <p>
  * *****************************************************************************
  */
-public class ErrorResponse {
-    public final int status;
-    public final String error;
-    public final String message;
-
-    public ErrorResponse(int status, String error, String message) {
-        this.status = status;
-        this.error = error;
-        this.message = message;
-    }
+public class StreamRegistry {
 }

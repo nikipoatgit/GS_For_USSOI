@@ -3,13 +3,13 @@ package ussoi.WebApp.HomePage.RoomDispatcherMethods;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import ussoi.Security.AuthenticationService.HttpResponseUtil;
+import ussoi.Http.HttpResponseUtil;
 import ussoi.SessionHandler.User.UserSession;
 
 import static ussoi.Security.AuthorizationService.AckAndNack.AckStatus.ACK;
 import static ussoi.Security.AuthorizationService.AckAndNack.AckStatus.NACK;
 import static ussoi.Security.AuthorizationService.AckAndNack.buildAckStatus;
-import static ussoi.Security.AuthenticationService.HttpResponseUtil.sendJson;
+import static ussoi.Http.HttpResponseUtil.sendJson;
 
 /**
  * *****************************************************************************

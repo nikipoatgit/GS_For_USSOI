@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 //        "data": { ... },
 //        "timestamp": 1710000000
 //      }
-public final class ControlWebSocketRegistry implements ControlMessageDispatcher {
+public final class ControlRegistry implements ControlMessageDispatcher {
 
     // userId → channel
     private final Map<String, Channel> userChannels = new ConcurrentHashMap<>();
@@ -52,24 +52,28 @@ public final class ControlWebSocketRegistry implements ControlMessageDispatcher 
 
 
 
-    public ControlWebSocketRegistry() {}
+    public ControlRegistry() {}
 
     public void registerUser(String userId, Channel channel, Role role) {
         userChannels.put(userId, channel);
+        System.out.println("[DEBUG] + registerUser " + userId );
 
         switch (role) {
             case ADMIN:
+                System.out.println("[DEBUG] + ADMIN");
                 level1Channels.add(channel);
                 level2Channels.add(channel);
                 level3Channels.add(channel);
                 break;
 
             case OPERATOR:
+                System.out.println("[DEBUG] + OPERATOR");
                 level2Channels.add(channel);
                 level3Channels.add(channel);
                 break;
 
             case VIEWER:
+                System.out.println("[DEBUG] + VIEWER");
                 level3Channels.add(channel);
                 break;
         }
@@ -142,24 +146,28 @@ public final class ControlWebSocketRegistry implements ControlMessageDispatcher 
 
     public void broadcastToAdmins(JsonNode node) {
         if (node == null) return;
+        System.out.println("[DEBUG] lev 1, size=" + level1Channels.size());
         TextWebSocketFrame frame = new TextWebSocketFrame(node.toString());
         level1Channels.writeAndFlush(frame);
     }
 
     public void broadcastToOperators(JsonNode node) {
         if (node == null) return;
+        System.out.println("[DEBUG] lev 2, size=" + level2Channels.size());
         TextWebSocketFrame frame = new TextWebSocketFrame(node.toString());
         level2Channels.writeAndFlush(frame);
     }
 
     public void broadcastToViewers(JsonNode node) {
         if (node == null) return;
+        System.out.println("[DEBUG] lev 3, size=" + level3Channels.size());
         TextWebSocketFrame frame = new TextWebSocketFrame(node.toString());
         level3Channels.writeAndFlush(frame);
     }
 
     public void broadcastToAll(JsonNode node) {
         if (node == null) return;
+        System.out.println("[DEBUG] broadcastToAll lev 3, size=" + level3Channels.size());
         TextWebSocketFrame frame = new TextWebSocketFrame(node.toString());
         level3Channels.writeAndFlush(frame);
     }

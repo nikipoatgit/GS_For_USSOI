@@ -55,7 +55,7 @@ public class AuthService {
         }
     }
 
-    public static void setTestAdmin() throws Exception {
+    public static void setTestUsers() throws Exception {
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement("""
             INSERT OR IGNORE INTO usersIdAndPassword
@@ -63,16 +63,34 @@ public class AuthService {
             VALUES (?, ?, ?, ?, ?)
          """)) {
 
-            ps.setString(1, "zeke");
-            ps.setString(2, "123");
-            ps.setString(3, utilityMethods.hashString("123"));
-            ps.setString(4, "admin");
+            // ADMIN
+            ps.setString(1, "Admin");
+            ps.setString(2, "100");
+            ps.setString(3, utilityMethods.hashString("100"));
+            ps.setString(4, Role.ADMIN.name());
             ps.setString(5, getTimestamp());
+            ps.addBatch();
 
-            ps.executeUpdate();
+            // OPERATOR
+            ps.setString(1, "operator1");
+            ps.setString(2, "200");
+            ps.setString(3, utilityMethods.hashString("200"));
+            ps.setString(4, Role.OPERATOR.name());
+            ps.setString(5, getTimestamp());
+            ps.addBatch();
+
+            // VIEWER
+            ps.setString(1, "viewer1");
+            ps.setString(2, "300");
+            ps.setString(3, utilityMethods.hashString("300"));
+            ps.setString(4, Role.VIEWER.name());
+            ps.setString(5, getTimestamp());
+            ps.addBatch();
+
+            ps.executeBatch();
         }
     }
-    public static boolean isUserValidSession(String cookieHeader) {
+    public static boolean isUserSessionValid(String cookieHeader) {
         // parse cookie header and validate session token
         String session = utilityMethods.extractSession(cookieHeader);
         if (session != null) {
@@ -80,7 +98,7 @@ public class AuthService {
         }
         return false;
     }
-    public static boolean isDeviceValidSession(String cookieHeader) {
+    public static boolean isDeviceSessionValid(String cookieHeader) {
         // parse cookie header and validate session token
         String session = utilityMethods.extractSession(cookieHeader);
         if (session != null) {
@@ -101,7 +119,7 @@ public class AuthService {
 
                 if (rs.next()) {
                     String roleString = rs.getString("role");
-                    return Role.valueOf(roleString);
+                    return  Role.valueOf(roleString.toUpperCase());
                 } else {
                     return Role.VIEWER;
                 }

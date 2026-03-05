@@ -5,7 +5,7 @@ import time
 # ─── Global Configuration ────────────────────────────────────────────────────
 
 HOST = "http://localhost:8000"
-COOKIES = {'session': 'T6ifKMIG8-ag54IxXiwJvSxMtiIy64gcZk8QLaP1Oco'}
+COOKIES = {'session': 'mgQAVOY2yZ0HLLRHwigb6DEO1aPWcmXqkOCy1J7jHg4'}
 
 # ─── Request Helpers ─────────────────────────────────────────────────────────
 
@@ -33,7 +33,7 @@ def add_room():
         "type": "room",
         "reqId": 4516,
         "intent": "addRoom",
-        "roomId": "s1",
+        "roomId": "r1",
         "roomName": "Test Room",
         "roomPassword": "123"
     }
@@ -70,8 +70,8 @@ def get_devices():
 
 def user_login():
     payload = {
-        "userId": "123",
-        "userPass": "123"
+        "userId": "200",
+        "userPass": "200"
     }
     response = post("/api/user/login", payload)
     # Store cookies from login response for subsequent requests
@@ -83,7 +83,7 @@ def user_login():
 
 def device_authenticate():
     payload = {
-        "roomId": "s1",
+        "roomId": "r1",
         "roomPwd": "123"
     }
     return post("/api/device/authenticate", payload)

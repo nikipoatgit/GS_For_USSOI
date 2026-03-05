@@ -1,10 +1,8 @@
-package ussoi.Http.HttpRoute;
+package ussoi.SessionHandler;
 
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
-import io.netty.util.CharsetUtil;
 import ussoi.Device.HandleDeviceAuth;
 import ussoi.WebApp.HomePage.DeviceDispatcher;
 import ussoi.WebApp.HomePage.RoomDispatcher;
@@ -12,7 +10,9 @@ import ussoi.WebApp.LoginPage.HandleUserLogin;
 
 import java.util.HashMap;
 import java.util.Map;
-import static ussoi.Security.AuthenticationService.HttpResponseUtil.sendError;
+
+import static ussoi.Http.HttpResponseUtil.*;
+import static ussoi.Security.AuthenticationService.AuthService.isUserSessionValid;
 
 /**
  * *****************************************************************************
@@ -56,14 +56,25 @@ public class ApiHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
         String path = new QueryStringDecoder(req.uri()).path();
 
-        if (path.equals("/") || path.startsWith("/assets") || !req.uri().startsWith("/api/")) {
-            ctx.fireChannelRead(req.retain()); // not an API call, pass through
+        if (!path.startsWith("/api")) {
+            ctx.fireChannelRead(req.retain());
             return;
         }
 
         if (!req.method().equals(HttpMethod.POST)) {
             sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, "Only POST allowed");
             return;
+        }
+
+        // User / Device Pass Through Api
+        if (!(path.equals("/api/user/login") || path.equals("/api/device/authenticate"))) {
+
+            String cookieHeader = req.headers().get(HttpHeaderNames.COOKIE);
+
+            if (cookieHeader == null || !isUserSessionValid(cookieHeader)) {
+                sendJson(ctx, HttpResponseStatus.UNAUTHORIZED, "Auth Token Invalid", null);
+                return;
+            }
         }
 
         ApiRouteHandler handler = API_ROUTES.get(key(req.method(), req.uri()));

@@ -21,7 +21,7 @@ import io.netty.handler.codec.http.websocketx.*;
  * <p>
  * *****************************************************************************
  */
-public class DeviceStreamWebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+public class DeviceStreamHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,WebSocketFrame frame) {
@@ -46,13 +46,8 @@ public class DeviceStreamWebSocketHandler extends SimpleChannelInboundHandler<We
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) {
+    public void handlerAdded(ChannelHandlerContext ctx) {
         // connection established
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        // cleanup
     }
 
     @Override

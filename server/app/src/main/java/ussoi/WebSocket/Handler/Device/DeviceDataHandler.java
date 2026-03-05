@@ -1,19 +1,16 @@
-package ussoi.WebSocket.Handler.User;
+package ussoi.WebSocket.Handler.Device;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.*;
-import ussoi.SessionHandler.Registry.UserSessionRegistry;
-
-import static ussoi.Security.AuthenticationService.AuthService.getUserRole;
 
 /**
  * *****************************************************************************
  *
  * @author nikhi
  * *****************************************************************************
- * @file UserControlWebSocketHandler.java
+ * @file DeviceDataWebSocketHandler.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -24,29 +21,18 @@ import static ussoi.Security.AuthenticationService.AuthService.getUserRole;
  * <p>
  * *****************************************************************************
  */
-public class UserControlWebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
-
-    private final String userId;
-    private final String deviceId;
-
-    public UserControlWebSocketHandler(String userId, String deviceId) {
-        this.userId = userId;
-        this.deviceId = deviceId;
-    }
+public class DeviceDataHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx,WebSocketFrame frame) {
+    protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) {
 
         if (frame instanceof TextWebSocketFrame textFrame) {
             handleText(ctx, textFrame.text());
-        }
-        else if (frame instanceof BinaryWebSocketFrame binaryFrame) {
+        } else if (frame instanceof BinaryWebSocketFrame binaryFrame) {
             handleBinary(ctx, binaryFrame.content());
-        }
-        else if (frame instanceof CloseWebSocketFrame) {
+        } else if (frame instanceof CloseWebSocketFrame) {
             ctx.close();
-        }
-        else if (frame instanceof PingWebSocketFrame ping) {
+        } else if (frame instanceof PingWebSocketFrame ping) {
             ctx.writeAndFlush(new PongWebSocketFrame(ping.content().retain()));
         }
     }
@@ -60,16 +46,8 @@ public class UserControlWebSocketHandler extends SimpleChannelInboundHandler<Web
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) {// from cookie or handshake headers
-        // triggered when ws connects
-        // adding it to that deviceSessions UserWs Registry
-      UserSessionRegistry.getInstance().getUserSession().getDeviceSession(deviceId).addUser(userId, ctx.channel(),getUserRole(userId));
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        // triggered when ws disconnects
-        // cleanup
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        // connection established
     }
 
     @Override
@@ -77,3 +55,4 @@ public class UserControlWebSocketHandler extends SimpleChannelInboundHandler<Web
         ctx.close();
     }
 }
+

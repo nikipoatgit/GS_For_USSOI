@@ -1,4 +1,4 @@
-package ussoi.WebSocket.Handler.Device;
+package ussoi.WebSocket.Handler.User;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -10,7 +10,7 @@ import io.netty.handler.codec.http.websocketx.*;
  *
  * @author nikhi
  * *****************************************************************************
- * @file DeviceDataWebSocketHandler.java
+ * @file UserStreamWebSocketHandler.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -21,7 +21,7 @@ import io.netty.handler.codec.http.websocketx.*;
  * <p>
  * *****************************************************************************
  */
-public class DeviceDataWebSocketHandler  extends SimpleChannelInboundHandler<WebSocketFrame> {
+public class UserStreamHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) {
@@ -46,13 +46,8 @@ public class DeviceDataWebSocketHandler  extends SimpleChannelInboundHandler<Web
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) {
+    public void handlerAdded(ChannelHandlerContext ctx) {
         // connection established
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        // cleanup
     }
 
     @Override

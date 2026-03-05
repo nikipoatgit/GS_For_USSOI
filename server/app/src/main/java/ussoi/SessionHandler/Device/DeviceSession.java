@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import ussoi.Utility.Role;
-import ussoi.WebSocket.Registry.ControlWebSocketRegistry;
+import ussoi.WebSocket.Registry.ControlRegistry;
 
 import static ussoi.Utility.utilityMethods.parseJsonFromBody;
 
@@ -29,11 +29,11 @@ public class DeviceSession {
     public volatile String deviceName;
     protected String deviceDetails;
 
-    private final ControlWebSocketRegistry controlWebSocketRegistry;
+    private final ControlRegistry controlWebSocketRegistry;
 
     public DeviceSession(String deviceId) {
         this.deviceId = deviceId;
-        controlWebSocketRegistry = new ControlWebSocketRegistry();
+        controlWebSocketRegistry = new ControlRegistry();
     }
 
     // assuming user Exist in db
@@ -41,7 +41,7 @@ public class DeviceSession {
         controlWebSocketRegistry.registerUser(userId,channel,role);
     }
 
-    public boolean checkIfUserExist(String userId){
+    public boolean checkIfUserExistInWsRegistry(String userId){
         return controlWebSocketRegistry.checkIfUserExist(userId);
     }
 
@@ -59,29 +59,36 @@ public class DeviceSession {
 
         if (impact == -1) return;
 
+        // TODO CLEANup
         switch (impact) {
             case 0:
+                System.out.println("processDeviceMessage");
                 processDeviceMessage(msg);
                 break;
 
             case 1:
+                System.out.println("broadcastToAdmins");
                 controlWebSocketRegistry.broadcastToAdmins(msg);
                 break;
 
             case 2:
+                System.out.println("broadcastToOperators");
                 controlWebSocketRegistry.broadcastToOperators(msg);
                 break;
 
             case 3:
+                System.out.println("broadcastToViewers");
                 controlWebSocketRegistry.broadcastToViewers(msg);
                 break;
 
             case 4:
+                System.out.println("broadcastToViewers+processDeviceMessage");
                 controlWebSocketRegistry.broadcastToAll(msg);
                 processDeviceMessage(msg);
                 break;
 
             default:
+                System.out.println(" issue ");
                 break;
         }
     }

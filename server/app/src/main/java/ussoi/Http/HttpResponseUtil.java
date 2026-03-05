@@ -1,11 +1,9 @@
-package ussoi.Security.AuthenticationService;
+package ussoi.Http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
-import ussoi.Http.HttpError.ErrorResponse;
-
 /**
  * *****************************************************************************
  *
@@ -27,8 +25,7 @@ public final class HttpResponseUtil {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status,String message) {
-        ErrorResponse error = new ErrorResponse(status.code(),status.reasonPhrase(), message);
-        send(ctx, status, error, null);
+        send(ctx, status, message, null);
     }
 
     public static void sendJson(ChannelHandlerContext ctx,HttpResponseStatus status, Object body,String cookie) {
@@ -58,5 +55,15 @@ public final class HttpResponseUtil {
             // todo : Log
             ctx.close();
         }
+    }
+
+    public static void sendUserRedirect(ChannelHandlerContext ctx) {
+        FullHttpResponse res = new DefaultFullHttpResponse(
+                HttpVersion.HTTP_1_1,
+                HttpResponseStatus.FOUND
+        );
+        res.headers().set(HttpHeaderNames.LOCATION, "/");
+        res.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
+        ctx.writeAndFlush(res);
     }
 }

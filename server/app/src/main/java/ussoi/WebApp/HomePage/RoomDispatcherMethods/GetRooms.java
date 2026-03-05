@@ -3,7 +3,7 @@ package ussoi.WebApp.HomePage.RoomDispatcherMethods;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import ussoi.Security.AuthenticationService.HttpResponseUtil;
+import ussoi.Http.HttpResponseUtil;
 import ussoi.SessionHandler.User.UserSession;
 
 /**

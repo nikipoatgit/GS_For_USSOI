@@ -45,8 +45,8 @@ public class RoomSession {
     }
 
     // Device Related Methods
-    public boolean addDevice(String deviceId){
-        return deviceSessionRegistry.register(deviceId,new DeviceSession(deviceId));
+    public void addDevice(String deviceId){
+        deviceSessionRegistry.register(deviceId, new DeviceSession(deviceId));
     }
     public boolean removeDevice(String deviceId){
         return  deviceSessionRegistry.unregister(deviceId);
@@ -60,7 +60,8 @@ public class RoomSession {
 
         for (DeviceSession device: deviceSessionRegistry.getAll().values()){
             ObjectNode node = mapper.createObjectNode();
-            node.put("deviceName", device.deviceName);
+            node.put("deviceName", device.deviceId);
+            node.put("deviceId", device.deviceId);
             array.add(node);
         }
         return array;

@@ -5,11 +5,11 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
-import ussoi.Http.HttpRoute.ApiHandler;
-import ussoi.Http.HttpRoute.StaticFileHandler;
-import ussoi.Security.AuthenticationService.AuthGuardHandler;
-import ussoi.WebSocket.WebSocketRouter;
+import ussoi.SessionHandler.ApiHandler;
+import ussoi.WebSocket.Route.WebSocketRouter;
+import ussoi.WebSocket.WebSocketAuthHandler;
 
 import java.nio.file.Path;
 
@@ -17,19 +17,29 @@ public class ServerHttpInitializer extends ChannelInitializer<Channel> {
 
     @Override
     protected void initChannel(Channel ch) {
-        ChannelPipeline pipeline = ch.pipeline();
-        pipeline.addLast(new HttpServerCodec());
-        pipeline.addLast(new HttpObjectAggregator(10 * 1024 * 1024));
 
-        pipeline.addLast(new AuthGuardHandler());
+        ChannelPipeline p = ch.pipeline();
 
-        pipeline.addLast(new WebSocketServerProtocolHandler("/ws", null, true));
-        pipeline.addLast(new WebSocketRouter());
+        p.addLast(new HttpServerCodec());
+        p.addLast(new HttpObjectAggregator(10 * 1024 * 1024));
 
-        pipeline.addLast(new ApiHandler());
+        p.addLast(new ApiHandler());
 
-        // TODO : this path is hardcoded need to fix for distribution
+        p.addLast(new WebSocketAuthHandler());
+        p.addLast(
+                new WebSocketServerProtocolHandler(
+                        "/ws",          // base websocket path
+                        null,           // subprotocols
+                        true,           // checkStartsWith → allow /ws/*
+                        65536,          // max frame payload length
+                        true,           // allow extensions
+                        true,           // allow mask mismatch
+                        true           // don't forward pong frames DownStream
+                )
+        );
+        p.addLast("webSocketRouter", new WebSocketRouter());
+
         Path root = Path.of("D:/WEB/GCS_For_USSOI/server/web/dist").toAbsolutePath();
-        pipeline.addLast(new StaticFileHandler(root));
+        p.addLast(new StaticFileHandler(root));
     }
 }
