@@ -13,6 +13,7 @@ import java.sql.SQLException;
 
 import static ussoi.Security.AuthorizationService.AckAndNack.buildAckStatus;
 import static ussoi.Storage.DB.Database.getConnection;
+import static ussoi.Utility.utilityMethods.hashString;
 
 /**
  * *****************************************************************************
@@ -70,22 +71,28 @@ public class UserServices {
         String password = req.path("password").asText();
         String role = req.path("role").asText();
 
-        String sql = "INSERT INTO usersIdAndPassword (username, userId, userPass_hash, role, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(userId) DO UPDATE SET username = excluded.username, userPass_hash = excluded.userPass_hash, role = excluded.role;";
+//        String sql = "INSERT INTO usersIdAndPassword (username, userId, userPass_hash, role, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(userId) DO UPDATE SET username = excluded.username, userPass_hash = excluded.userPass_hash, role = excluded.role;";
+        String sql = "INSERT INTO usersIdAndPassword  (username, userId, userPass_hash, role,created_at)  VALUES (?, ?, ?, ?, ?)  ON CONFLICT(userId) DO NOTHING;";
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            String hashPassword = hashString(password);
 
             ps.setString(1, username);
             ps.setString(2, userId);
-            ps.setString(3, password);
+            ps.setString(3, hashPassword);
             ps.setString(4, role);
             ps.setString(5, String.valueOf(System.currentTimeMillis()));
 
-            ps.executeUpdate();
+            int rows = ps.executeUpdate();
+
+            if (rows == 0) {
+                return buildAckStatus(AckAndNack.AckStatus.NACK, "user", "user already exists", "-1");
+            }
 
             return buildAckStatus(AckAndNack.AckStatus.ACK, "user", "user Added", "-1");
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             // todo log
             e.printStackTrace();
             return buildAckStatus(AckAndNack.AckStatus.NACK, "user", "user add failed", "-1");

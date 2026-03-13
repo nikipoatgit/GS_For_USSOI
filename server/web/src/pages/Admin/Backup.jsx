@@ -1,7 +1,12 @@
-export default function Backup(){
+export default function Backup() {
     return (
         <div>
-            <h2>Backup</h2>
+            <div className="section-header">
+                <h2 className="section-title">Backup</h2>
+            </div>
+            <div className="card state-box" style={{ color: "#bbb" }}>
+                💾 Backup tools coming soon.
+            </div>
         </div>
-    )
+    );
 }

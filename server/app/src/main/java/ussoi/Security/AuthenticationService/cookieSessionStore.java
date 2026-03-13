@@ -48,12 +48,17 @@ public class cookieSessionStore {
     }
 
     public static Role getUserRoleFromSessionInDb(String sessionKey) {
-        String sql = "SELECT role FROM usersIdAndPassword WHERE session_cookie = ? LIMIT 1";
+
+        String userId = getUserIdFromSessionInDb(sessionKey);
+
+        if (userId == null) return Role.VIEWER;
+
+        String sql = "SELECT role FROM usersIdAndPassword WHERE userId = ? LIMIT 1";
 
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, sessionKey);
+            ps.setString(1, userId);
 
             try (ResultSet rs = ps.executeQuery()) {
 
@@ -169,7 +174,9 @@ public class cookieSessionStore {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Device token validation failed", e);
+            System.out.println("Device token validation failed");
+            e.printStackTrace();
+            return false;
         }
     }
 

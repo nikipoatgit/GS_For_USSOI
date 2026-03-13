@@ -26,8 +26,7 @@ public class ServerHttpInitializer extends ChannelInitializer<Channel> {
         p.addLast(new ApiHandler());
 
         p.addLast(new WebSocketAuthHandler());
-        p.addLast(
-                new WebSocketServerProtocolHandler(
+        p.addLast(new WebSocketServerProtocolHandler(
                         "/ws",          // base websocket path
                         null,           // subprotocols
                         true,           // checkStartsWith → allow /ws/*

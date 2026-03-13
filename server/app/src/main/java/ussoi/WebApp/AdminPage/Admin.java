@@ -46,8 +46,10 @@ public class Admin {
             return;
         }
 
+        // get role for that  token
         Role userRole = getUserRoleFromSessionInDb(token);
 
+        // chk for role equals admin
         if (userRole != Role.ADMIN){
             sendJson(ctx, HttpResponseStatus.UNAUTHORIZED,"Admin Access Needed",null);
             return;

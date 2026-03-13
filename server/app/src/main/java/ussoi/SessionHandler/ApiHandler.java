@@ -4,6 +4,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import ussoi.Device.HandleDeviceAuth;
+import ussoi.WebApp.AdminPage.Admin;
 import ussoi.WebApp.HomePage.DeviceDispatcher;
 import ussoi.WebApp.HomePage.RoomDispatcher;
 import ussoi.WebApp.LoginPage.HandleUserLogin;
@@ -36,7 +37,7 @@ public class ApiHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     static {
         //admin api
-        API_ROUTES.put(key(HttpMethod.POST, "/api/admin"),HandleUserLogin::handleLogin);
+        API_ROUTES.put(key(HttpMethod.POST, "/api/admin"), Admin::handleAdmin);
 
         // user Api
         API_ROUTES.put(key(HttpMethod.POST, "/api/user/login"),HandleUserLogin::handleLogin);

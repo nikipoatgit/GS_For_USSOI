@@ -47,7 +47,7 @@ public class DeviceSession {
     }
 
     public boolean deviceStatus(){
-        controlWebSocketRegistry.isDeviceConnected();
+        return controlWebSocketRegistry.isDeviceConnected();
     }
 
     // assuming user Exist in db
@@ -132,7 +132,7 @@ public class DeviceSession {
         root.put("d_id", deviceId);
         root.put("d_name", deviceName);
 
-        ObjectNode control = buildControlUsers((ArrayNode) controlWebSocketRegistry.getControlState(),controlWebSocketRegistry.isDeviceConnected());
+        ObjectNode control = buildControlUsers((ArrayNode) controlWebSocketRegistry.getControlState(), controlWebSocketRegistry.isDeviceConnected());
 
         root.set("control", control);
 
