@@ -83,6 +83,7 @@ public class HandleDeviceAuth {
 
         } catch (Exception e) {
             System.out.println(e);
+            // TODO LOG
             HttpResponseUtil.sendError(ctx,HttpResponseStatus.BAD_REQUEST,"Invalid JSON");
         }
     }
