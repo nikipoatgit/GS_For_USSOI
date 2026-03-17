@@ -60,8 +60,8 @@ public class RoomSession {
 
         for (DeviceSession device: deviceSessionRegistry.getAll().values()){
             ObjectNode node = mapper.createObjectNode();
-            node.put("d_Name", device.deviceId);
-            node.put("d_Id", device.deviceName);
+            node.put("d_Name", device.deviceName);
+            node.put("d_Id", device.deviceId);
             node.put("d_Stat", device.deviceStatus());
             array.add(node);
         }

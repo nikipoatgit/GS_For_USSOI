@@ -36,7 +36,7 @@ import static ussoi.Utility.utilityMethods.parseJsonFromBody;
  */
 public class DeviceSession {
     public final String deviceId;
-    public volatile String deviceName;
+    public volatile String deviceName = "test Name";
     protected String deviceDetails;
 
     private final ControlRegistry controlWebSocketRegistry;

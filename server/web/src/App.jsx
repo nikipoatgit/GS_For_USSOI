@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
-import DevicePage from "./pages/DevicePage.jsx";
+import DevicePage from "./pages/Device/DevicePage.jsx";
 import AdminPage from "./pages/Admin/AdminPage.jsx";
 
 export default function App() {

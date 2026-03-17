@@ -1,13 +1,13 @@
 package ussoi.WebSocket.Handler.User;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.*;
 import ussoi.SessionHandler.Registry.UserSessionRegistry;
-
-import java.nio.charset.StandardCharsets;
+import ussoi.WebApp.DevicePage.UserCommandRouter;
 
 import static ussoi.Security.AuthenticationService.AuthService.getUserRole;
 
@@ -29,6 +29,9 @@ import static ussoi.Security.AuthenticationService.AuthService.getUserRole;
  */
 public class UserControlHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
+    private final UserCommandRouter router = new UserCommandRouter();
+    private static final ObjectMapper mapper = new ObjectMapper();
+
     private final String userId;
     private final String deviceId;
 
@@ -43,7 +46,7 @@ public class UserControlHandler extends SimpleChannelInboundHandler<WebSocketFra
         switch (frame) {
             case TextWebSocketFrame textFrame ->handleText(ctx, textFrame.text());
             case BinaryWebSocketFrame binaryFrame -> handleBinary(ctx, binaryFrame.content());
-            case CloseWebSocketFrame closeWebSocketFrame -> ctx.close();
+            case CloseWebSocketFrame ignored -> ctx.close();
             case PingWebSocketFrame ping -> ctx.writeAndFlush(new PongWebSocketFrame(ping.content().retain()));
             default -> {
             }
@@ -51,13 +54,21 @@ public class UserControlHandler extends SimpleChannelInboundHandler<WebSocketFra
     }
 
     private void handleText(ChannelHandlerContext ctx, String message) {
-        // process JSON message
-        System.out.println("Received text: " + message);
+        try {
+            JsonNode json = mapper.readTree(message);
+            if (json == null || !json.isObject()) {
+                return;
+            }
+        } catch (Exception e) {
+            // TODO malformed JSON — drop silently Add Security Check
+            return;
+        }
+
+        router.route(ctx, userId, deviceId, message);
     }
 
     private void handleBinary(ChannelHandlerContext ctx, ByteBuf buf) {
-        // optional
-        System.out.println("Received bin: User");
+        // no need right now
     }
 
     @Override
@@ -68,13 +79,22 @@ public class UserControlHandler extends SimpleChannelInboundHandler<WebSocketFra
 
         try {
             System.out.println("User WS connected");
-            UserSessionRegistry.getInstance().getUserSession().getDeviceSession(deviceId).addUser(userId, ctx.channel(),getUserRole(userId));
+            UserSessionRegistry.getInstance()
+                    .getUserSession()
+                    .getDeviceSession(deviceId)
+                    .addUser(userId, ctx.channel(),getUserRole(userId));
+
         } catch (Exception e) {
             // TODO LOG
             System.out.println("Failed to connect ws for deviceId="+ deviceId + " " + e);
+            ctx.close();
         }
     }
 
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        // We already have put internal call back for this
+    }
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         ctx.close();

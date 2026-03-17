@@ -45,6 +45,7 @@ public class UserRoute {
         QueryStringDecoder decoder = new QueryStringDecoder(uri);
         String deviceId = decoder.parameters().getOrDefault("deviceId", List.of()).stream().findFirst().orElse(null);
 
+        // check for dev id in database  first
         if (!doesDeviceIDExistInDb(deviceId)) {
             close(ctx);
             return;
@@ -60,7 +61,9 @@ public class UserRoute {
 
         String userId = getUserIdFromSessionInDb(token);
 
-        if (userId == null || deviceSession.checkIfUserExistInWsRegistry(userId)) {
+        // TODO Single Session Per user Per Device
+        // for testing this check removed deviceSession.checkIfUserExistInWsRegistry(userId)
+        if (userId == null || false) {
             close(ctx);
             return;
         }

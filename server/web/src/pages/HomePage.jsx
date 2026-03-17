@@ -272,19 +272,24 @@ export default function HomePage() {
                             <div className="device-grid">
                                 {filteredDevices.map(device => (
                                     <div
-                                        key={device.deviceId}
+                                        key={device.d_Id}
                                         className="device-card"
-                                        onClick={() => window.open(`/Device/${device.deviceId}`)}
-                                        title={`${device.d_Name || device.deviceName || device.deviceId} · ${device.deviceId}`}
+                                        onClick={() => window.open(`/Device/${device.d_Id}`)}
+                                        title={`${device.d_Name || device.d_Id} · ${device.d_Id}`}
                                     >
                                         <p className="device-card-room">{device.roomName}</p>
+
                                         <p className="device-card-name">
-                                            {device.d_Name || device.deviceName || device.deviceId}
+                                            {device.d_Name || device.d_Id}
                                         </p>
-                                        <p className="device-card-id">{device.deviceId}</p>
+
+                                        <p className="device-card-id">{device.d_Id}</p>
+
                                         <div className="device-card-status">
-                                            <span className="dot dot-green" />
-                                            <span className="status-lbl">Online</span>
+                                            <span className={`dot ${device.d_Stat ? "dot-green" : "dot-gray"}`} />
+                                            <span className="status-lbl">
+                                                {device.d_Stat ? "Online" : "Offline"}
+                                            </span>
                                         </div>
                                     </div>
                                 ))}
