@@ -8,7 +8,7 @@ import ussoi.Http.HttpResponseUtil;
 import ussoi.SessionHandler.Registry.UserSessionRegistry;
 
 import static ussoi.Http.HttpResponseUtil.sendJson;
-import static ussoi.Utility.utilityMethods.parseJsonFromBody;
+import static ussoi.Utility.utilityMethods.parseJsonFromBinaryBody;
 
 /**
  * *****************************************************************************
@@ -28,7 +28,7 @@ import static ussoi.Utility.utilityMethods.parseJsonFromBody;
  */
 public class DeviceDispatcher {
     public static void parseRequestDevices(ChannelHandlerContext ctx, FullHttpRequest req){
-        JsonNode jsonBody = parseJsonFromBody(req.content());
+        JsonNode jsonBody = parseJsonFromBinaryBody(req.content());
         if (jsonBody == null){
             HttpResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST,"Missing Json Body field");
             return;

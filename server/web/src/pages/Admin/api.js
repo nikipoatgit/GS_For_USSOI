@@ -1,4 +1,4 @@
-const BASE = "http://localhost:8000";
+const BASE = window.location.origin;
 
 export async function apiPost(path, body) {
     const res = await fetch(`${BASE}${path}`, {
@@ -7,9 +7,16 @@ export async function apiPost(path, body) {
         credentials: "include",
         body: JSON.stringify(body),
     });
+
     const text = await res.text();
+
     let data;
-    try { data = JSON.parse(text); } catch { data = text; }
+    try {
+        data = JSON.parse(text);
+    } catch {
+        data = text;
+    }
+
     return { ok: res.ok, status: res.status, data };
 }
 

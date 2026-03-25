@@ -53,17 +53,15 @@ public class WebSocketRouter extends ChannelInboundHandlerAdapter {
         }
 
         String uri = handshake.requestUri();
-        String cookie = handshake.requestHeaders().get(HttpHeaderNames.COOKIE);
-
         System.out.println("Ws Handshake complete :"+uri);
 
-        if (cookie == null) {
-            close(ctx);
-            return;
-        }
+        String authHeader = handshake.requestHeaders().get(HttpHeaderNames.AUTHORIZATION);
+        String cookie = handshake.requestHeaders().get(HttpHeaderNames.COOKIE);
 
-        String token = extractSession(cookie);
+        String token = extractSession(cookie,authHeader);
+
         if (token == null) {
+            System.out.println("Token: null");
             close(ctx);
             return;
         }

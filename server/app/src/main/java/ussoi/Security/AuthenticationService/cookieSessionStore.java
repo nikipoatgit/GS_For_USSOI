@@ -130,6 +130,7 @@ public class cookieSessionStore {
             throw new RuntimeException("Failed to create session", e);
         }
     }
+
     public static String getDeviceIdFromSessionInDb(String token) {
 
         if (token == null || token.isBlank()) {
@@ -153,6 +154,32 @@ public class cookieSessionStore {
         } catch (SQLException e) {
             // TODO LOG
             throw new RuntimeException("Device token lookup failed", e);
+        }
+    }
+
+    public static String getDeviceSessionFromDeviceIdInDb(String deviceId) {
+
+        if (deviceId == null || deviceId.isBlank()) {
+            return null;
+        }
+
+        String sql = "SELECT session_cookie FROM deviceSessions WHERE deviceId = ? LIMIT 1";
+
+        try (Connection connection = getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            ps.setString(1, deviceId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("session_cookie");
+                }
+                return null;
+            }
+
+        } catch (SQLException e) {
+            // TODO LOG
+            throw new RuntimeException("Device Id lookup failed", e);
         }
     }
 

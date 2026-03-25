@@ -4,12 +4,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.netty.handler.codec.http.cookie.Cookie;
+import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import ussoi.Utility.Role;
 import ussoi.Utility.utilityMethods;
 
 import java.sql.*;
+import java.util.Set;
 
 import static ussoi.Storage.DB.Database.getConnection;
+import static ussoi.Utility.utilityMethods.extractSession;
 import static ussoi.Utility.utilityMethods.getTimestamp;
 
 /**
@@ -96,18 +100,20 @@ public class AuthService {
     }
     public static boolean isUserSessionValid(String cookieHeader) {
         // parse cookie header and validate session token
-        String session = utilityMethods.extractSession(cookieHeader);
+        String session = extractSession(cookieHeader,null);
         if (session != null) {
             return cookieSessionStore.doesUserTokenExistInDb(session);
         }
         return false;
     }
-    public static boolean isDeviceSessionValid(String cookieHeader) {
-        // parse cookie header and validate session token
-        String session = utilityMethods.extractSession(cookieHeader);
+    public static boolean isDeviceSessionValid(String cookieHeader, String authHeader) {
+
+        String session = extractSession(cookieHeader, authHeader);
+
         if (session != null) {
             return cookieSessionStore.doesDeviceTokenExistInDb(session);
         }
+
         return false;
     }
 

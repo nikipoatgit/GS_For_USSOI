@@ -38,6 +38,7 @@ public class WebSocketAuthHandler extends SimpleChannelInboundHandler<FullHttpRe
 
         String path = req.uri();
         String cookieHeader = req.headers().get(HttpHeaderNames.COOKIE);
+        String authHeader = req.headers().get(HttpHeaderNames.AUTHORIZATION);
 
         System.out.println("Ws Auth Request :" + path);
 
@@ -54,7 +55,7 @@ public class WebSocketAuthHandler extends SimpleChannelInboundHandler<FullHttpRe
 
         if (path.startsWith("/ws/device/")) {
 
-            if (cookieHeader != null && isDeviceSessionValid(cookieHeader)) {
+            if (isDeviceSessionValid(cookieHeader, authHeader)) {
                 ctx.fireChannelRead(req.retain());
                 return;
             }

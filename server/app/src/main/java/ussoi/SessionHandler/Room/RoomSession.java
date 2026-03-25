@@ -45,8 +45,8 @@ public class RoomSession {
     }
 
     // Device Related Methods
-    public void addDevice(String deviceId){
-        deviceSessionRegistry.register(deviceId, new DeviceSession(deviceId));
+    public void addDevice(String deviceId, String deviceName){
+        deviceSessionRegistry.register(deviceId, new DeviceSession(deviceId,deviceName));
     }
     public boolean removeDevice(String deviceId){
         return  deviceSessionRegistry.unregister(deviceId);
@@ -65,6 +65,7 @@ public class RoomSession {
             node.put("d_Stat", device.deviceStatus());
             array.add(node);
         }
+
         return array;
     }
 

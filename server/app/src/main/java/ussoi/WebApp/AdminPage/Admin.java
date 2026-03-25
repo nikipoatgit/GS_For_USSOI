@@ -10,7 +10,7 @@ import ussoi.Utility.Role;
 import static ussoi.Http.HttpResponseUtil.sendJson;
 import static ussoi.Security.AuthenticationService.cookieSessionStore.getUserRoleFromSessionInDb;
 import static ussoi.Utility.utilityMethods.extractSession;
-import static ussoi.Utility.utilityMethods.parseJsonFromBody;
+import static ussoi.Utility.utilityMethods.parseJsonFromBinaryBody;
 
 /**
  * *****************************************************************************
@@ -38,7 +38,7 @@ public class Admin {
 
     public static void handleAdmin(ChannelHandlerContext ctx, FullHttpRequest req){
 
-        String token = extractSession(req.headers().get(HttpHeaderNames.COOKIE));
+        String token = extractSession(req.headers().get(HttpHeaderNames.COOKIE),null);
 
 
         if (token == null){
@@ -55,7 +55,7 @@ public class Admin {
             return;
         }
 
-        JsonNode ans  = parseAdminRequest(parseJsonFromBody(req.content()));
+        JsonNode ans  = parseAdminRequest(parseJsonFromBinaryBody(req.content()));
 
         if (ans == null){
             sendJson(ctx, HttpResponseStatus.BAD_REQUEST,"Bad Json Request",null);

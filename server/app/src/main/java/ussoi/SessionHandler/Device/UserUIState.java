@@ -1,13 +1,15 @@
-package ussoi.Utility;
+package ussoi.SessionHandler.Device;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.lang.reflect.Array;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * *****************************************************************************
  *
  * @author nikhi
  * *****************************************************************************
- * @file ControlMessageDispatcher.java
+ * @file UserUIState.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -18,10 +20,15 @@ import com.fasterxml.jackson.databind.JsonNode;
  * <p>
  * *****************************************************************************
  */
-public interface ControlMessageDispatcher {
-    public void broadcastToAdmins(JsonNode frame);
-    public void broadcastToOperators(JsonNode frame);
-    public void broadcastToViewers(JsonNode frame);
-    public void broadcastToAll(JsonNode frame);
+public class UserUIState {
 
+    // Device state
+    public boolean paramsSet;
+    public StreamMode streamMode;
+
+    // btns
+    public ActionState streamState = ActionState.IDLE;
+    public ActionState recordState = ActionState.IDLE;
+    // tunnelId → state
+    public Map<String, ActionState> tunnelStates = new HashMap<>();
 }

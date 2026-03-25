@@ -13,7 +13,7 @@ import ussoi.WebApp.HomePage.RoomDispatcherMethods.RoomIntent;
 
 import java.util.Map;
 
-import static ussoi.Utility.utilityMethods.parseJsonFromBody;
+import static ussoi.Utility.utilityMethods.parseJsonFromBinaryBody;
 
 /**
  * *****************************************************************************
@@ -44,7 +44,7 @@ public class RoomDispatcher {
             );
 
     public static void parseRequestRooms(ChannelHandlerContext ctx, FullHttpRequest req){
-        JsonNode jsonBody = parseJsonFromBody(req.content());
+        JsonNode jsonBody = parseJsonFromBinaryBody(req.content());
         if (jsonBody == null){
             HttpResponseUtil.sendError(ctx,HttpResponseStatus.BAD_REQUEST,"Missing Json Body field");
             return;

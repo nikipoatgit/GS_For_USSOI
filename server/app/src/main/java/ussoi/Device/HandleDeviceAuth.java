@@ -10,8 +10,12 @@ import ussoi.SessionHandler.Registry.UserSessionRegistry;
 import ussoi.SessionHandler.User.UserSession;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+import static ussoi.Security.AuthenticationService.Cryptography.getPublicKeyString;
+import static ussoi.Security.AuthenticationService.Cryptography.rsaDecrypt;
 import static ussoi.Security.AuthenticationService.cookieSessionStore.*;
 import static ussoi.Security.AuthenticationService.cookieSessionStore.generateSecureToken;
 
@@ -32,53 +36,35 @@ import static ussoi.Security.AuthenticationService.cookieSessionStore.generateSe
  * *****************************************************************************
  */
 public class HandleDeviceAuth {
+
+    // TODO Update this to more robust mechanism
+    private static final ConcurrentHashMap<String, String> map = new ConcurrentHashMap<>();
+
     public static void authenticateDevice(ChannelHandlerContext ctx, FullHttpRequest req) {
 
         String json = req.content().toString(StandardCharsets.UTF_8);
 
         try {
-            ObjectMapper mapper = new ObjectMapper();
             JsonNode body = mapper.readTree(json);
 
+            JsonNode typeNode = body.get("type");
 
-            String roomId = body.get("roomId").asText();
-            String roomPwd = body.get("roomPwd").asText();
-
-            UserSession userSession = UserSessionRegistry.getInstance().getUserSession();
-
-            boolean valid = userSession.validateRoomExistenceAndPwd(roomId,roomPwd);
-
-            if (valid) {
-                String newToken ;
-                // TODO REMOVE COMMENTS IN PROD
-                do {
-                    newToken = generateSecureToken();
-                } while (doesDeviceTokenExistInDb(newToken));
-
-                String newDeviceId;
-
-                do {
-                    newDeviceId = generateSecureToken();
-                } while (doesDeviceIDExistInDb(newDeviceId));
-
-                addOrUpdateDeviceSessionTokenInDb(newToken,newDeviceId);
-
-                // room validation done earlier
-                if (userSession.addDeviceToRoom(roomId,newDeviceId)) {
-
-                    // TODO FORCE ADD DEVICE AND REMOVE NON ACTIVE DEVICES
-
-                    Map<String, Object> payload = Map.of("deviceToken", newToken, "deviceId", newDeviceId);
-
-                    HttpResponseUtil.sendJson(ctx, HttpResponseStatus.OK, payload, null);
-                }
-                else {
-                    HttpResponseUtil.sendError(ctx,HttpResponseStatus.EXPECTATION_FAILED,"Room Not Valid");
-                }
-
+            if (typeNode == null || typeNode.asText().isEmpty()) {
+                HttpResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "Missing type");
+                return;
             }
-            else {
-                HttpResponseUtil.sendError(ctx,HttpResponseStatus.BAD_REQUEST,"Invalid Room Params");
+
+            String type = typeNode.asText();
+
+            switch (type) {
+                case "getKey":
+                    getPublicKey(ctx);
+                    break;
+                case "login":
+                    validateLogin(ctx, body);
+                    break;
+                default:
+                    HttpResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "Invalid type");
             }
 
         } catch (Exception e) {
@@ -86,5 +72,108 @@ public class HandleDeviceAuth {
             // TODO LOG
             HttpResponseUtil.sendError(ctx,HttpResponseStatus.BAD_REQUEST,"Invalid JSON");
         }
+    }
+
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    private static void getPublicKey(ChannelHandlerContext ctx) {
+
+        String newDeviceId;
+
+        do {
+            newDeviceId = generateSecureToken();
+        } while (doesDeviceIDExistInDb(newDeviceId) ||  map.containsKey(newDeviceId));
+
+        //  addOrUpdateDeviceSessionTokenInDb(newToken,newDeviceId);
+
+        String challenge = generateSecureToken();
+
+        map.put(newDeviceId,challenge);
+
+        //TODO  implement expiry logic
+        long expiresAt = System.currentTimeMillis() + 60_000; // 60 sec
+
+        Map<String, Object> payload = Map.of(
+                "publicKey", getPublicKeyString(),
+                "deviceId", newDeviceId,
+                "challenge", challenge,
+                "expiresAt", expiresAt
+        );
+
+        HttpResponseUtil.sendJson(ctx, HttpResponseStatus.OK, payload, null);
+    }
+
+    private static void validateLogin(ChannelHandlerContext ctx,JsonNode body) {
+        JsonNode deviceIdNode = body.get("deviceId");
+        JsonNode deviceNameNode = body.get("deviceName");
+        JsonNode dataNode = body.get("data");
+
+        if (deviceIdNode == null || dataNode == null || deviceNameNode == null) {
+            HttpResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "Missing fields");
+            return;
+        }
+
+        String deviceId = deviceIdNode.asText();
+        String deviceName = deviceNameNode.asText();
+        String encrypted = dataNode.asText();
+
+        try {
+            String decryptedJson = rsaDecrypt(encrypted);
+            JsonNode decrypted = mapper.readTree(decryptedJson);
+
+            String roomId = decrypted.get("roomId").asText();
+            String roomPwd = decrypted.get("roomPwd").asText();
+            String challenge = decrypted.get("challenge").asText();
+            long timestamp = decrypted.get("timestamp").asLong();
+
+            String pendingChallenge = map.remove(deviceId);
+
+            if (pendingChallenge == null) {
+                HttpResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "DeviceId Not Found");
+                return;
+            }
+
+            if (!pendingChallenge.equals(challenge)) {
+                HttpResponseUtil.sendError(ctx, HttpResponseStatus.UNAUTHORIZED, "Challenge mismatch");
+                return;
+            }
+
+            // remove key form hash map
+            map.remove(deviceId);
+
+            if (Math.abs(System.currentTimeMillis() - timestamp) > 30_000) {
+                HttpResponseUtil.sendError(ctx, HttpResponseStatus.UNAUTHORIZED, "Stale request");
+                return;
+            }
+
+            UserSession userSession = UserSessionRegistry.getInstance().getUserSession();
+
+            // chk room details
+            if (!userSession.validateRoomExistenceAndPwd(roomId, roomPwd)) {
+                HttpResponseUtil.sendError(ctx, HttpResponseStatus.UNAUTHORIZED, "Invalid room credentials");
+                return;
+            }
+
+            String token = generateSecureToken();
+            System.out.println(token);
+
+            addOrUpdateDeviceSessionTokenInDb(token, deviceId);
+
+            if (!userSession.addDeviceToRoom(roomId, deviceId,deviceName)) {
+                HttpResponseUtil.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, "Room attach failed");
+                return;
+            }
+
+            Map<String, Object> payload = Map.of(
+                    "deviceToken", token,
+                    "deviceId", deviceId
+            );
+
+            HttpResponseUtil.sendJson(ctx, HttpResponseStatus.OK, payload, null);
+
+        } catch (Exception e) {
+            HttpResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "Decryption failed");
+        }
+
     }
 }
