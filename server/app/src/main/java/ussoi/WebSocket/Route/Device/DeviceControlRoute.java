@@ -39,7 +39,7 @@ public class DeviceControlRoute {
         // TODO SERVER RESTART not device will be there instance
         // check for device existence
         if (deviceId == null || registry.getUserSession().getDeviceSession(deviceId) == null) {
-            System.out.println("deviceStreamRoute issue Line 40");
+            System.out.println("DeviceSession Don't Exist");
             close(ctx);
             return;
         }

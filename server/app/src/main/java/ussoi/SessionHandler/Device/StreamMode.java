@@ -1,13 +1,11 @@
-package ussoi.Utility;
-
-import com.fasterxml.jackson.databind.JsonNode;
+package ussoi.SessionHandler.Device;
 
 /**
  * *****************************************************************************
  *
  * @author nikhi
  * *****************************************************************************
- * @file ControlMessageDispatcher.java
+ * @file StreamMode.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -18,10 +16,21 @@ import com.fasterxml.jackson.databind.JsonNode;
  * <p>
  * *****************************************************************************
  */
-public interface ControlMessageDispatcher {
-    public void broadcastToAdmins(JsonNode frame);
-    public void broadcastToOperators(JsonNode frame);
-    public void broadcastToViewers(JsonNode frame);
-    public void broadcastToAll(JsonNode frame);
+public enum StreamMode {
+    WebRtc,
+    H264,
+    HFH264,
+    None;
 
+    public static StreamMode fromString(String value) {
+        if (value == null) return None;
+
+        switch (value.toLowerCase()) {
+            case "webrtc": return WebRtc;
+            case "h264": return H264;
+            case "hfh264": return HFH264;
+            case "none": return None;
+            default: return null;
+        }
+    }
 }

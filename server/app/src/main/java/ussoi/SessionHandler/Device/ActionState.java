@@ -1,13 +1,11 @@
-package ussoi.Utility;
-
-import com.fasterxml.jackson.databind.JsonNode;
+package ussoi.SessionHandler.Device;
 
 /**
  * *****************************************************************************
  *
  * @author nikhi
  * *****************************************************************************
- * @file ControlMessageDispatcher.java
+ * @file ActionState.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -18,10 +16,9 @@ import com.fasterxml.jackson.databind.JsonNode;
  * <p>
  * *****************************************************************************
  */
-public interface ControlMessageDispatcher {
-    public void broadcastToAdmins(JsonNode frame);
-    public void broadcastToOperators(JsonNode frame);
-    public void broadcastToViewers(JsonNode frame);
-    public void broadcastToAll(JsonNode frame);
-
+public enum ActionState {
+    IDLE,
+    PROCESSING,
+    ACTIVE,
+    ERROR
 }

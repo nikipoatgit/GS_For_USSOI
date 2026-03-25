@@ -6,8 +6,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.*;
+import ussoi.SessionHandler.Device.DeviceSession;
 import ussoi.SessionHandler.Registry.UserSessionRegistry;
+import ussoi.Utility.Role;
 import ussoi.WebApp.DevicePage.UserCommandRouter;
+
+import java.util.Set;
 
 import static ussoi.Security.AuthenticationService.AuthService.getUserRole;
 
@@ -29,15 +33,20 @@ import static ussoi.Security.AuthenticationService.AuthService.getUserRole;
  */
 public class UserControlHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
-    private final UserCommandRouter router = new UserCommandRouter();
+    private final UserCommandRouter router ;
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private final String userId;
     private final String deviceId;
 
+    private final DeviceSession deviceSession;
+
     public UserControlHandler(String userId, String deviceId) {
         this.userId = userId;
         this.deviceId = deviceId;
+        deviceSession = UserSessionRegistry.getInstance().getUserSession().getDeviceSession(deviceId);
+
+        router = new UserCommandRouter(deviceSession,getUserRole(userId));
     }
 
     @Override
@@ -47,7 +56,6 @@ public class UserControlHandler extends SimpleChannelInboundHandler<WebSocketFra
             case TextWebSocketFrame textFrame ->handleText(ctx, textFrame.text());
             case BinaryWebSocketFrame binaryFrame -> handleBinary(ctx, binaryFrame.content());
             case CloseWebSocketFrame ignored -> ctx.close();
-            case PingWebSocketFrame ping -> ctx.writeAndFlush(new PongWebSocketFrame(ping.content().retain()));
             default -> {
             }
         }
@@ -63,8 +71,7 @@ public class UserControlHandler extends SimpleChannelInboundHandler<WebSocketFra
             // TODO malformed JSON — drop silently Add Security Check
             return;
         }
-
-        router.route(ctx, userId, deviceId, message);
+        router.route(ctx,message);
     }
 
     private void handleBinary(ChannelHandlerContext ctx, ByteBuf buf) {
@@ -75,14 +82,9 @@ public class UserControlHandler extends SimpleChannelInboundHandler<WebSocketFra
     public void handlerAdded(ChannelHandlerContext ctx) {// from cookie or handshake headers
         // triggered when ws connects
         // adding it to that deviceSessions UserWs Registry
-        System.out.println("[DEBUG] + handlerAdded " + userId );
 
         try {
-            System.out.println("User WS connected");
-            UserSessionRegistry.getInstance()
-                    .getUserSession()
-                    .getDeviceSession(deviceId)
-                    .addUser(userId, ctx.channel(),getUserRole(userId));
+            deviceSession.addUser(userId, ctx.channel(),getUserRole(userId));
 
         } catch (Exception e) {
             // TODO LOG

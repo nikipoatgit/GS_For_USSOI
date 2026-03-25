@@ -3,12 +3,12 @@ package ussoi.WebSocket.Registry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.channel.Channel;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import ussoi.SessionHandler.Device.DeviceSession;
 import ussoi.Utility.Role;
 import ussoi.Utility.ControlMessageDispatcher;
 
@@ -53,9 +53,14 @@ public final class ControlRegistry implements ControlMessageDispatcher {
     // level 2 -> viewers + operators + Admin
     private final ChannelGroup level3Channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
+    // Device Status variables
+    private volatile long lastSeen = 0;
+    private static final long TIMEOUT = 3_500; // 3.5 sec
 
 
-    public ControlRegistry() {}
+
+    public ControlRegistry(DeviceSession deviceSession) {
+    }
 
     public void registerUser(String userId, Channel channel, Role role) {
         userChannels.put(userId, channel);
@@ -63,20 +68,17 @@ public final class ControlRegistry implements ControlMessageDispatcher {
 
         switch (role) {
             case ADMIN:
-                System.out.println("[DEBUG] + ADMIN");
                 level1Channels.add(channel);
                 level2Channels.add(channel);
                 level3Channels.add(channel);
                 break;
 
             case OPERATOR:
-                System.out.println("[DEBUG] + OPERATOR");
                 level2Channels.add(channel);
                 level3Channels.add(channel);
                 break;
 
             case VIEWER:
-                System.out.println("[DEBUG] + VIEWER");
                 level3Channels.add(channel);
                 break;
         }
@@ -89,13 +91,11 @@ public final class ControlRegistry implements ControlMessageDispatcher {
         });
     }
 
-    public boolean sendToUser(String userId, Object frame) {
+    public void sendToUser(String userId, Object frame) {
         Channel ch = userChannels.get(userId);
         if (ch != null && ch.isActive()) {
             ch.writeAndFlush(frame);
-            return true;
         }
-        return false;
     }
 
     public void broadcastToUsers(Object frame) {
@@ -132,45 +132,54 @@ public final class ControlRegistry implements ControlMessageDispatcher {
         );
     }
 
-    public boolean sendTODevice(Object frame) {
+    public boolean sendToDevice(JsonNode frame) {
         Channel ch = deviceChannel.get();
-        if (ch != null && ch.isActive()) {
-            ch.writeAndFlush(frame);
-            return true;
-        }
-        return false;
+        if (ch == null || !ch.isActive()) return false;
+
+        ch.writeAndFlush(new TextWebSocketFrame(frame.toString()))
+                .addListener(f -> {
+                    if (!f.isSuccess()) {
+                        f.cause().printStackTrace();
+                        deviceChannel.compareAndSet(ch, null);
+                    }
+                });
+
+        return true;
     }
 
     public boolean isDeviceConnected() {
         Channel ch = deviceChannel.get();
-        return ch != null && ch.isActive();
+
+        if (ch == null || !ch.isActive()) return false;
+
+        long now = System.currentTimeMillis();
+        return (now - lastSeen) < TIMEOUT;
     }
 
+    public void updateLastSeen() {
+        lastSeen = System.currentTimeMillis();
+    }
 
     public void broadcastToAdmins(JsonNode node) {
         if (node == null) return;
-        System.out.println("[DEBUG] lev 1, size=" + level1Channels.size());
         TextWebSocketFrame frame = new TextWebSocketFrame(node.toString());
         level1Channels.writeAndFlush(frame);
     }
 
     public void broadcastToOperators(JsonNode node) {
         if (node == null) return;
-        System.out.println("[DEBUG] lev 2, size=" + level2Channels.size());
         TextWebSocketFrame frame = new TextWebSocketFrame(node.toString());
         level2Channels.writeAndFlush(frame);
     }
 
     public void broadcastToViewers(JsonNode node) {
         if (node == null) return;
-        System.out.println("[DEBUG] lev 3, size=" + level3Channels.size());
         TextWebSocketFrame frame = new TextWebSocketFrame(node.toString());
         level3Channels.writeAndFlush(frame);
     }
 
     public void broadcastToAll(JsonNode node) {
         if (node == null) return;
-        System.out.println("[DEBUG] broadcastToAll lev 3, size=" + level3Channels.size());
         TextWebSocketFrame frame = new TextWebSocketFrame(node.toString());
         level3Channels.writeAndFlush(frame);
     }

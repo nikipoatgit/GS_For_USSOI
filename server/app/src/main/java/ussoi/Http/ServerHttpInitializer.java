@@ -25,7 +25,6 @@ public class ServerHttpInitializer extends ChannelInitializer<Channel> {
 
         p.addLast(new ApiHandler());
 
-        p.addLast(new WebSocketAuthHandler());
         p.addLast(new WebSocketServerProtocolHandler(
                         "/ws",          // base websocket path
                         null,           // subprotocols
@@ -36,6 +35,7 @@ public class ServerHttpInitializer extends ChannelInitializer<Channel> {
                         true           // don't forward pong frames DownStream
                 )
         );
+        p.addLast(new WebSocketAuthHandler());
         p.addLast("webSocketRouter", new WebSocketRouter());
 
         Path root = Path.of("D:/WEB/GCS_For_USSOI/server/web/dist").toAbsolutePath();

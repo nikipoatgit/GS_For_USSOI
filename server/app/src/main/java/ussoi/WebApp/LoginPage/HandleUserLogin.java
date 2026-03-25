@@ -11,7 +11,7 @@ import java.util.Map;
 import static ussoi.Security.AuthenticationService.AuthService.authenticateUser;
 import static ussoi.Utility.utilityMethods.extractSession;
 import static ussoi.Security.AuthenticationService.cookieSessionStore.*;
-import static ussoi.Utility.utilityMethods.parseJsonFromBody;
+import static ussoi.Utility.utilityMethods.parseJsonFromBinaryBody;
 
 /**
  * *****************************************************************************
@@ -35,7 +35,7 @@ public class HandleUserLogin {
     public static void handleLogin(ChannelHandlerContext ctx, FullHttpRequest req) {
 
         String cookieHeader = req.headers().get(HttpHeaderNames.COOKIE);
-        String sessionToken = extractSession(cookieHeader);
+        String sessionToken = extractSession(cookieHeader,null);
 
         // 1If session already valid return OK
         if (cookieSessionStore.doesUserTokenExistInDb(sessionToken)) {
@@ -43,7 +43,7 @@ public class HandleUserLogin {
             return;
         }
 
-        JsonNode body = parseJsonFromBody(req.content());
+        JsonNode body = parseJsonFromBinaryBody(req.content());
 
         // Check Credentials and issue new token
         if (body != null && checkCredentials(body)) {

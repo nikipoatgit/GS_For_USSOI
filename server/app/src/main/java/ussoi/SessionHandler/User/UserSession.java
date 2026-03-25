@@ -29,12 +29,11 @@ public class UserSession{
 
     public UserSession(){
         roomSessionRegistry = new RoomSessionRegistry();
+        roomSessionRegistry.register("100", new RoomSession("100","nina","100"));
     }
 
     public boolean addRoom(String roomId, String roomName, String roomPassword) {
-        if (roomSessionRegistry.checkIfRoomNameExist(roomName)){
-            return false;
-        }
+        // if key room exist return false
         return roomSessionRegistry.register(roomId, new RoomSession(roomId,roomName,roomPassword));
     }
 
@@ -69,10 +68,10 @@ public class UserSession{
     }
 
     // note we dont validate RoomId and pass
-    public Boolean addDeviceToRoom(String roomId , String deviceId){
+    public Boolean addDeviceToRoom(String roomId , String deviceId,String deviceName){
         RoomSession room = roomSessionRegistry.getSession(roomId);
         if (room != null){
-            room.addDevice(deviceId);
+            room.addDevice(deviceId,deviceName);
             return true;
         }
         return false;

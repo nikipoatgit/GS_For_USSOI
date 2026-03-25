@@ -1,5 +1,6 @@
 package ussoi.Utility;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
@@ -35,7 +36,7 @@ import java.util.Set;
 public class utilityMethods {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    public static JsonNode parseJsonFromBody(ByteBuf content) {
+    public static JsonNode parseJsonFromBinaryBody(ByteBuf content) {
         if (!content.isReadable()) {
             return null;
         }
@@ -46,6 +47,13 @@ public class utilityMethods {
             // TODO HANDLE IT
            return null;
         }
+    }
+
+    public static JsonNode parseJsonFromTextBody(String content) throws JsonProcessingException {
+        if (content == null || content.isEmpty()) {
+            return null;
+        }
+        return MAPPER.readTree(content);
     }
 
     public static String getTimestamp() {
@@ -61,14 +69,22 @@ public class utilityMethods {
         return Base64.getEncoder().encodeToString(hash);
     }
 
-    public static String extractSession(String cookieHeader) {
+    public static String extractSession(String cookieHeader, String authHeader) {
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7); // remove "Bearer "
+        }
+
         if (cookieHeader == null) return null;
+
         Set<Cookie> cookies = ServerCookieDecoder.STRICT.decode(cookieHeader);
+
         for (Cookie c : cookies) {
-            if (c.name().equals("session")) {
+            if ("session".equals(c.name())) {
                 return c.value();
             }
         }
+
         return null;
     }
 }

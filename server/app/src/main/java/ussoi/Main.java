@@ -28,9 +28,10 @@ import ussoi.Storage.DB.Database;
 import ussoi.SessionHandler.Registry.UserSessionRegistry;
 import ussoi.Http.ServerHttpInitializer;
 
+import static ussoi.UssoiStrings.HTTP_IP;
+import static ussoi.UssoiStrings.HTTP_PORT;
+
 public class Main {
-    private static final int HTTP_PORT = 8000;
-    private static final String HTTP_IP = "127.0.0.1";
 
     public void run() throws Exception {
 
