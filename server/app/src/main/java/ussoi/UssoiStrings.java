@@ -27,8 +27,9 @@ public final class UssoiStrings {
     public static final String CMD_TIMEOUT = "Request Timeout for Device";
 
     // ── Message types
-    public static final String ACK = "ack";
-    public static final String NACK = "nack";
+    public static final String RESPONSE = "response";
+    public static final String ERROR = "error";
+    public static final String REQUEST  = "request";
 
     // ── Device errors
     public static final String DEVICE_OFFLINE = "Device Offline";
@@ -38,5 +39,60 @@ public final class UssoiStrings {
     public static final String INVALID_PARAMS            = "Invalid or missing params";
     public static final String TUNNEL_INVALID            = "Tunnel Don't Exist";
 
+
+    // Errors
+    public static final String INVALID_JSON       = "invalid_json";
+    public static final String UNKNOWN_CMD        = "unknown_command";
+    public static final String UNAUTHORIZED       = "unauthorized";
+
+    public static final String TYPE     = "type";
+    public static final String CMD     = "cmd";
+    public static final String CMD_ID  = "cmdId";
+    public static final String STATUS  = "status";
+    public static final String DATA    = "data";
+    public static final String ERROR_MSG = "error";
+
+    // Privileged Commands
+    public static final String START_STREAM     = "start_stream";
+    public static final String STOP_STREAM      = "stop_stream";
+
+    public static final String START_RECORDING  = "start_recording";
+    public static final String STOP_RECORDING   = "stop_recording";
+
+    public static final String START_TUNNEL     = "start_tunnel";
+    public static final String STOP_TUNNEL      = "stop_tunnel";
+
+    public static final String SWITCH           = "switch";
+
+    public static final String SET_PARAMS       = "set_params";
+    public static final String SET_STREAM_RES   = "set_stream_res";
+    public static final String SET_RECORD_RES   = "set_record_res";
+
+    // Public Commands
+    public static final String PLAY         = "play";
+    public static final String PAUSE        = "pause";
+    public static final String ROTATE       = "rotate";
+    public static final String MUTE         = "mute";
+    public static final String FLIP         = "flip";
+
+    public static final String WEBRTC_OFFER = "webrtc_offer";
+    public static final String WEBRTC_ICE   = "webrtc_ice";
+
+    // Cache / Query Commands
+    public static final String GET_TUNNELS  = "get_tunnels";
+    public static final String GET_RES      = "get_res";
+    public static final String GET_PARAMS   = "get_params";
+
+    public static final String TELEMETRY   = "t";
+
+    // Status Values
+    public static final String STATUS_OK    = "ok";
+    public static final String STATUS_FAIL  = "fail";
+
+    // Stream Modes
+    public static final String STREAM_WEBRTC = "WEBRTC";
+    public static final String STREAM_H264   = "H264";
+    public static final String STREAM_HFH264 = "HFH264";
+    public static final String STREAM_NONE   = "NONE";
 
 }

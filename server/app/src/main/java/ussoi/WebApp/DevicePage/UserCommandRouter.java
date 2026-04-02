@@ -5,8 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandlerContext;
 import ussoi.SessionHandler.Device.DeviceSession;
 import ussoi.Utility.Role;
-import java.util.HashMap;
+
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
+
+import static ussoi.UssoiStrings.*;
 
 /**
  * *****************************************************************************
@@ -26,88 +30,93 @@ import java.util.Map;
  */
 public class UserCommandRouter {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
-    private final Map<String, CommandHandler> commandMap = new HashMap<>();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    private static final Set<Role> PRIVILEGED_ROLES = EnumSet.of(Role.ADMIN, Role.OPERATOR);
+
+    // Commands  to ADMIN / OPERATOR only.
+    private static final String[] PRIVILEGED_COMMANDS = { START_STREAM, STOP_STREAM, START_RECORDING, STOP_RECORDING, START_TUNNEL, STOP_TUNNEL, SWITCH, SET_PARAMS, SET_STREAM_RES, SET_RECORD_RES };
+
+    // public Commands
+    private static final String[] PUBLIC_COMMANDS = { PLAY, PAUSE, ROTATE, MUTE, FLIP, WEBRTC_OFFER, WEBRTC_ICE };
+
+    private final Map<String, CommandHandler> commandMap;
     private final DeviceSession deviceSession;
 
-    public UserCommandRouter(DeviceSession deviceSession, Role userRole){
+    public UserCommandRouter(DeviceSession deviceSession, Role userRole) {
         this.deviceSession = deviceSession;
-
-        if (userRole == Role.ADMIN || userRole == Role.OPERATOR){
-            // Stream
-            commandMap.put("start_stream",    deviceSession::handleStartStream);
-            commandMap.put("stop_stream",     deviceSession::handleStopStream);
-
-            // Recording
-            commandMap.put("start_recording", deviceSession::handleStartRecording);
-            commandMap.put("stop_recording",  deviceSession::handleStopRecording);
-
-            // Tunnel
-            commandMap.put("start_tunnel",    deviceSession::handleStartTunnel);
-            commandMap.put("stop_tunnel",     deviceSession::handleStopTunnel);
-
-            // camera
-            commandMap.put("switch",          deviceSession::handleSwitch);
-
-            //params
-            commandMap.put("set_params",      deviceSession::handleSetParams);
-        }
-
-        // Tunnel
-        commandMap.put("get_tunnels",     deviceSession::handleGetTunnels);
-
-        // Resolution
-        commandMap.put("set_stream_res",  deviceSession::handleSetStreamRes);
-        commandMap.put("get_stream_res",  deviceSession::handleGetStreamRes);
-        commandMap.put("set_record_res",  deviceSession::handleSetRecordRes);
-        commandMap.put("get_record_res",  deviceSession::handleGetRecordRes);
-        commandMap.put("get_res",         deviceSession::handleGetRes);
-
-        // Playback / stream controls
-        commandMap.put("play",            deviceSession::handlePlay);
-        commandMap.put("pause",           deviceSession::handlePause);
-        commandMap.put("rotate",          deviceSession::handleRotate);
-        commandMap.put("mute",            deviceSession::handleMute);
-        commandMap.put("flip",            deviceSession::handleFlip);
-
-
-        // Params
-        commandMap.put("get_params",      deviceSession::handleGetParams);
-
-        // WebRTC
-        commandMap.put("webrtc_offer",    deviceSession::handleWebrtcOffer);
-        commandMap.put("webrtc_ice",      deviceSession::handleWebrtcIce);
-
-        // sendUiStateToALl
-        commandMap.put("ui_state", deviceSession::UiState);
+        this.commandMap    = buildCommandMap(userRole);
     }
 
-    public void route(ChannelHandlerContext ctx,String rawJson) {
-        JsonNode json;
-        try {
-            json = mapper.readTree(rawJson);
-        } catch (Exception e) {
-            WsResponseHelper.sendNack(ctx, "unknown", "invalid_json");
-            return;
-        }
 
-        String cmd = json.path("cmd").asText("");
+    public void route(ChannelHandlerContext ctx, String rawJson) {
+        JsonNode json = parseJson(ctx, rawJson);
+        if (json == null) return;
+
+        String cmd = json.path(CMD).asText("");
+        String cmdId = json.path(CMD_ID).asText("");
 
         CommandHandler handler = commandMap.get(cmd);
-
         if (handler == null) {
-            // TODO CHANGE TO NEW FORMAT
-            deviceSession.sendNack(cmd, "unknown/unauthorized request");
+            deviceSession.sendError(cmd,cmdId,"unknown_or_unauthorized_command");
             return;
         }
 
         handler.handle(json);
     }
 
+    // Cheap cmd extraction before full parse
+    private static String extractCmd(String rawJson) {
+        try {
+            // Jackson's streaming API — no full tree allocation
+            try (var parser = MAPPER.createParser(rawJson)) {
+                while (parser.nextToken() != null) {
+                    if ("cmd".equals(parser.currentName())) {
+                        parser.nextToken();
+                        return parser.getText();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
+    }
+
+    private Map<String, CommandHandler> buildCommandMap(Role userRole) {
+        Map<String, CommandHandler> map = new java.util.HashMap<>();
+
+        // Role commands
+        if (PRIVILEGED_ROLES.contains(userRole)) {
+            for (String cmd : PRIVILEGED_COMMANDS) {
+                map.put(cmd, deviceSession::processUserMessage);
+            }
+        }
+
+        // Public commands
+        for (String cmd : PUBLIC_COMMANDS) {
+            map.put(cmd, deviceSession::processUserMessage);
+        }
+
+        // Commands with dedicated handlers ( cache )
+        map.put(GET_TUNNELS, deviceSession::handleGetTunnels);
+        map.put(GET_RES,     deviceSession::handleGetRes);
+        map.put(GET_PARAMS,  deviceSession::handleGetParams);
+
+        return Map.copyOf(map); // immutable after construction
+    }
+
+    private JsonNode parseJson(ChannelHandlerContext ctx, String rawJson) {
+        try {
+            return MAPPER.readTree(rawJson);
+        } catch (Exception e) {
+            WsResponseHelper.sendNack(ctx, "unknown", "invalid_json");
+            return null;
+        }
+    }
+
     @FunctionalInterface
     public interface CommandHandler {
         void handle(JsonNode json);
     }
-
 }
