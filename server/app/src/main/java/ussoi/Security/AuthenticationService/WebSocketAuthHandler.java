@@ -1,4 +1,4 @@
-package ussoi.WebSocket;
+package ussoi.Security.AuthenticationService;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

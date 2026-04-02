@@ -5,11 +5,10 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import ussoi.SessionHandler.ApiHandler;
 import ussoi.WebSocket.Route.WebSocketRouter;
-import ussoi.WebSocket.WebSocketAuthHandler;
+import ussoi.Security.AuthenticationService.WebSocketAuthHandler;
 
 import java.nio.file.Path;
 
@@ -38,7 +37,7 @@ public class ServerHttpInitializer extends ChannelInitializer<Channel> {
         p.addLast(new WebSocketAuthHandler());
         p.addLast("webSocketRouter", new WebSocketRouter());
 
-        Path root = Path.of("D:/WEB/GCS_For_USSOI/server/web/dist").toAbsolutePath();
+        Path root = Path.of("/home/nikipo/user/WEB/GCS_For_USSOI/server/web/dist");
         p.addLast(new StaticFileHandler(root));
     }
 }

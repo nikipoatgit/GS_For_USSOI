@@ -1,15 +1,13 @@
 package ussoi.SessionHandler.Device;
 
-import java.lang.reflect.Array;
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * *****************************************************************************
  *
  * @author nikhi
  * *****************************************************************************
- * @file UserUIState.java
+ * @file DeviceDataCache.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -20,15 +18,11 @@ import java.util.Map;
  * <p>
  * *****************************************************************************
  */
-public class UserUIState {
-
+public class DeviceDataCache {
     // Device state
-    public boolean paramsSet;
-    public StreamMode streamMode;
-
-    // btns
-    public ActionState streamState = ActionState.IDLE;
-    public ActionState recordState = ActionState.IDLE;
-    // tunnelId → state
-    public Map<String, ActionState> tunnelStates = new HashMap<>();
+    public JsonNode params;
+    // tunnels
+    public JsonNode tunnels;
+    // camera resolution
+    public JsonNode resolution;
 }
