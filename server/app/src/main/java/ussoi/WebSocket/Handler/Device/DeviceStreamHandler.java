@@ -4,6 +4,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.*;
+import ussoi.SessionHandler.Device.DeviceSession;
+import ussoi.SessionHandler.Registry.UserSessionRegistry;
 
 /**
  * *****************************************************************************
@@ -22,6 +24,15 @@ import io.netty.handler.codec.http.websocketx.*;
  * *****************************************************************************
  */
 public class DeviceStreamHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+
+    private final String deviceId ;
+    // Device session is created when dev id is assigned , and not destroyed until restarts
+    private final DeviceSession deviceSession;
+
+    public DeviceStreamHandler(String deviceId) {
+        this.deviceId = deviceId;
+        deviceSession = UserSessionRegistry.getInstance().getUserSession().getDeviceSession(deviceId);
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,WebSocketFrame frame) {
@@ -42,11 +53,16 @@ public class DeviceStreamHandler extends SimpleChannelInboundHandler<WebSocketFr
     }
 
     private void handleBinary(ChannelHandlerContext ctx, ByteBuf buf) {
+        deviceSession.broadcastToStreamUserPool(buf.retain());
         // optional
     }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
+        // unidirectional flow
+//        if (deviceSession != null){
+//            deviceSession.addDeviceToStreamPool(ctx.channel());
+//        }
         // connection established
     }
 

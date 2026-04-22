@@ -15,6 +15,7 @@ import ussoi.WebSocket.Handler.User.UserControlHandler;
 import ussoi.WebSocket.Route.Device.DeviceControlRoute;
 import ussoi.WebSocket.Route.Device.DeviceStreamRoute;
 import ussoi.WebSocket.Route.User.UserRoute;
+import ussoi.WebSocket.Route.User.UserStreamRoute;
 
 import java.util.List;
 
@@ -42,6 +43,8 @@ public class WebSocketRouter extends ChannelInboundHandlerAdapter {
     private final UserRoute userRoute = new UserRoute();
     private final DeviceControlRoute deviceControlRoute = new DeviceControlRoute();
     private final DeviceStreamRoute deviceStreamRoute = new DeviceStreamRoute();
+    private final UserStreamRoute userStreamRoute = new UserStreamRoute();
+
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -78,11 +81,17 @@ public class WebSocketRouter extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (userStreamRoute.matches(uri)) {
+            System.out.println("userRoute.matches");
+            userStreamRoute.handle(ctx, uri, token);
+            return;
+        }
         if (deviceStreamRoute.matches(uri)) {
             System.out.println("deviceStreamRoute.matches");
             deviceStreamRoute.handle(ctx, uri, token);
             return;
         }
+
 
         close(ctx);
 }

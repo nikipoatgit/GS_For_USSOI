@@ -39,7 +39,6 @@ public class DeviceControlHandler extends SimpleChannelInboundHandler<WebSocketF
         deviceSession.updateLastSeen();
         switch (frame) {
             case TextWebSocketFrame textFrame ->handleText(ctx, textFrame.text());
-            case BinaryWebSocketFrame binaryFrame -> handleBinary(ctx, binaryFrame.content());
             case CloseWebSocketFrame ignored -> ctx.close();
             default -> {
             }
@@ -50,15 +49,12 @@ public class DeviceControlHandler extends SimpleChannelInboundHandler<WebSocketF
         deviceSession.processDeviceMessage(message);
     }
 
-    private void handleBinary(ChannelHandlerContext ctx, ByteBuf buf) {
-    }
-
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         try {
             System.out.println("Device WS connected");
 //            startHeartbeat(ctx);
-            deviceSession.addDevice(ctx.channel());
+            deviceSession.addDeviceToControlPool(ctx.channel());
 
         } catch (Exception e) {
             System.out.println("Failed to connect ws for deviceId="+ deviceId + " " + e);
@@ -72,23 +68,5 @@ public class DeviceControlHandler extends SimpleChannelInboundHandler<WebSocketF
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-
-//        if (heartbeatTask != null) {
-//            heartbeatTask.cancel(false);
-//            heartbeatTask = null;
-//        }
     }
-
-//    private void startHeartbeat(ChannelHandlerContext ctx) {
-//
-//        heartbeatTask = ctx.executor().scheduleAtFixedRate(() -> {
-//
-//            Channel ch = ctx.channel();
-//
-//            if (!ch.isActive()) return;
-//
-//            ch.writeAndFlush(new PingWebSocketFrame());
-//
-//        }, 0, 2, TimeUnit.SECONDS); // 2 sec interval
-//    }
 }
