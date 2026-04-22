@@ -3,6 +3,8 @@ package ussoi.WebSocket.Route.Device;
 import io.netty.channel.ChannelHandlerContext;
 import ussoi.WebSocket.Handler.Device.DeviceStreamHandler;
 
+import static ussoi.Security.AuthenticationService.cookieSessionStore.getDeviceIdFromSessionInDb;
+
 /**
  * *****************************************************************************
  *
@@ -30,7 +32,7 @@ public class DeviceStreamRoute {
         ctx.pipeline().replace(
                 "webSocketRouter",
                 "deviceStreamHandler",
-                new DeviceStreamHandler()
+                new DeviceStreamHandler(getDeviceIdFromSessionInDb(token))
         );
     }
 }

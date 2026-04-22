@@ -1,4 +1,4 @@
-package ussoi.WebSocket.Registry;
+package ussoi.SessionHandler.Device.PoolRegistry;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

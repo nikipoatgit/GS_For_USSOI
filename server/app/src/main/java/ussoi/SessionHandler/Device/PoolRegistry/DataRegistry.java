@@ -1,11 +1,11 @@
-package ussoi.SessionHandler.Device;
+package ussoi.SessionHandler.Device.PoolRegistry;
 
 /**
  * *****************************************************************************
  *
  * @author nikhi
  * *****************************************************************************
- * @file PendingCommand.java
+ * @file DataWebSocketRegistry.java
  * @attention Copyright (c) 2026
  * All rights reserved.
  * <p>
@@ -16,12 +16,5 @@ package ussoi.SessionHandler.Device;
  * <p>
  * *****************************************************************************
  */
-public class PendingCommand {
-    public final String cmdId;
-    public final String cmd;
-
-    public PendingCommand(String cmdId, String cmd) {
-        this.cmdId = cmdId;
-        this.cmd = cmd;
-    }
+public class DataRegistry {
 }

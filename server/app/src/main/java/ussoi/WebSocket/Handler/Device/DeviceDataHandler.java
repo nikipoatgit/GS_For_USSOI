@@ -42,6 +42,7 @@ public class DeviceDataHandler extends SimpleChannelInboundHandler<WebSocketFram
     }
 
     private void handleBinary(ChannelHandlerContext ctx, ByteBuf buf) {
+
         // optional
     }
 

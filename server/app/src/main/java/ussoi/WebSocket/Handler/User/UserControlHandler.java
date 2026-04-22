@@ -8,10 +8,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.*;
 import ussoi.SessionHandler.Device.DeviceSession;
 import ussoi.SessionHandler.Registry.UserSessionRegistry;
-import ussoi.Utility.Role;
 import ussoi.WebApp.DevicePage.UserCommandRouter;
-
-import java.util.Set;
 
 import static ussoi.Security.AuthenticationService.AuthService.getUserRole;
 
@@ -84,7 +81,7 @@ public class UserControlHandler extends SimpleChannelInboundHandler<WebSocketFra
         // adding it to that deviceSessions UserWs Registry
 
         try {
-            deviceSession.addUser(userId, ctx.channel(),getUserRole(userId));
+            deviceSession.addUserToControlPool(userId, ctx.channel(),getUserRole(userId));
 
         } catch (Exception e) {
             // TODO LOG

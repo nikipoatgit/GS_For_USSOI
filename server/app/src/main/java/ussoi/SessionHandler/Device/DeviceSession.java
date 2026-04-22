@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import ussoi.Utility.Role;
 import ussoi.WebApp.DevicePage.UserCommandRouter;
-import ussoi.WebSocket.Registry.ControlRegistry;
+import ussoi.SessionHandler.Device.PoolRegistry.ControlRegistry;
+import ussoi.SessionHandler.Device.PoolRegistry.StreamRegistry;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +40,7 @@ public class DeviceSession {
     public final String deviceName ;
     private DeviceDataCache deviceDataCache = null;
     private final ControlRegistry controlWSRegistry ;
+    private final StreamRegistry streamRegistry ;
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final Map<String, UserCommandRouter.CommandHandler> commandMap = new HashMap<>();
@@ -45,6 +48,7 @@ public class DeviceSession {
     public DeviceSession(String deviceId, String deviceName) {
         this.deviceId = deviceId;
         this.deviceName = deviceName;
+        this.streamRegistry = new StreamRegistry();
         this.deviceDataCache = new DeviceDataCache();
 
         controlWSRegistry = new ControlRegistry(this);
@@ -86,8 +90,17 @@ public class DeviceSession {
 
 
     // assuming user Exist in db
-    public void addUser(String userId, Channel channel, Role role){
+    public void addUserToControlPool(String userId, Channel channel, Role role){
         controlWSRegistry.registerUser(userId,channel,role);
+    }
+
+    // assuming user Exist in db
+    public void addUserToStreamPool(String userId, Channel channel){
+        streamRegistry.registerUser(userId,channel);
+    }
+
+    public void broadcastToStreamUserPool(ByteBuf retain){
+        streamRegistry.broadcastToUsers(retain);
     }
 
     public boolean checkIfUserExistInWsRegistry(String userId){
@@ -95,11 +108,17 @@ public class DeviceSession {
     }
 
     // assuming user has done this checkIfDeviceExist
-    public void addDevice(Channel channel){
+    public void addDeviceToControlPool(Channel channel){
         controlWSRegistry.registerDevice(channel);
     }
 
+    // since this is one way no | assuming user has done this checkIfDeviceExist
+    private void addDeviceToStreamPool(Channel channel){
+        // streamRegistry.registerDevice(channel);
+    }
+
     public void processUserMessage(JsonNode jsonNode) {
+        System.out.println("USER TO DEV :"+jsonNode);
         if (!controlWSRegistry.sendToDevice(jsonNode)){
             sendError(jsonNode.path(CMD).asText(""),jsonNode.path(CMD_ID).asText(""),DEVICE_OFFLINE);
         }
@@ -121,7 +140,6 @@ public class DeviceSession {
         UserCommandRouter.CommandHandler handler = commandMap.get(cmd);
         if (handler != null) {
             handler.handle(msg);
-            return;
         }
         controlWSRegistry.broadcastToAll(msg);
     }
@@ -139,24 +157,13 @@ public class DeviceSession {
 
         root.set("control", control);
 
-        // dummy stream
-        ObjectNode stream = mapper.createObjectNode();
-        ArrayNode streamUsers = mapper.createArrayNode();
-        streamUsers.add(mapper.createObjectNode().put("uid", "dummy1").put("uname", "dummy1"));
-        streamUsers.add(mapper.createObjectNode().put("uid", "dummy2").put("uname", "dummy2"));
+        // stream
+        ObjectNode control2 = buildControlUsers((ArrayNode) streamRegistry.getControlState(),true);
+        root.set("stream", control2);
 
-        stream.set("users", streamUsers);
-        stream.put("device", true);
-
-        root.set("stream", stream);
-
-        // dummy data
-        ArrayNode data = mapper.createArrayNode();
-
-        data.add(mapper.createObjectNode().put("uid", "dummy1").put("uname", "dummy1"));
-        data.add(mapper.createObjectNode().put("uid", "dummy2").put("uname", "dummy2"));
-
-        root.set("data", data);
+        //  data
+        ObjectNode control3 = buildControlUsers((ArrayNode) streamRegistry.getControlState(),true);
+        root.set("data", control3);
 
         return root;
     }
