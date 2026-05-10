@@ -1,4 +1,4 @@
-package ussoi.WebApp.DevicePage;
+package ussoi.SessionHandler.User;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
