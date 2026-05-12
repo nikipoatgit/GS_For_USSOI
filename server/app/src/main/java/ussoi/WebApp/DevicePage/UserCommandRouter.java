@@ -1,4 +1,4 @@
-package ussoi.SessionHandler.User;
+package ussoi.WebApp.DevicePage;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,10 +35,10 @@ public class UserCommandRouter {
     private static final Set<Role> PRIVILEGED_ROLES = EnumSet.of(Role.ADMIN, Role.OPERATOR);
 
     // Commands  to ADMIN / OPERATOR only.
-    private static final String[] PRIVILEGED_COMMANDS = { START_STREAM, STOP_STREAM, START_RECORDING, STOP_RECORDING, START_TUNNEL, STOP_TUNNEL, SWITCH, SET_PARAMS, SET_STREAM_RES, SET_RECORD_RES };
+    private static final String[] PRIVILEGED_COMMANDS = { START_STREAM, STOP_STREAM, START_RECORDING, STOP_RECORDING, START_TUNNEL, STOP_TUNNEL, SWITCH, SET_PARAMS, SET_STREAM_RES, SET_RECORD_RES, WEBRTC_SDP };
 
     // public Commands
-    private static final String[] PUBLIC_COMMANDS = { PLAY, PAUSE, ROTATE, MUTE, FLIP, WEBRTC_OFFER, WEBRTC_ICE };
+    private static final String[] PUBLIC_COMMANDS = { PLAY, PAUSE, ROTATE, MUTE, FLIP, WEBRTC_SDP, WEBRTC_ICE };
 
     private final Map<String, CommandHandler> commandMap;
     private final DeviceSession deviceSession;
@@ -65,6 +65,7 @@ public class UserCommandRouter {
         handler.handle(json);
     }
 
+    // TODO I was testing this then i forgot
     // Cheap cmd extraction before full parse
     private static String extractCmd(String rawJson) {
         try {

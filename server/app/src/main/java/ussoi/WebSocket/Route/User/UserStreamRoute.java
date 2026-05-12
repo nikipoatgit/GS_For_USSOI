@@ -38,6 +38,7 @@ public class UserStreamRoute {
     public void handle(ChannelHandlerContext ctx, String uri, String token) {
 
         if (!uri.startsWith("/ws/user/stream?deviceId=")) {
+            System.out.println("[DEBUG] + no matching url  ws/user/stream?deviceId= " );
             close(ctx);
             return;
         }
@@ -47,6 +48,7 @@ public class UserStreamRoute {
 
         // check for dev id in database  first
         if (!doesDeviceIDExistInDb(deviceId)) {
+            System.out.println("[DEBUG] + doesDeviceIDExistInDb NO " );
             close(ctx);
             return;
         }

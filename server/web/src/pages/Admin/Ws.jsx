@@ -3,7 +3,7 @@ import { adminPost } from "./api";
 import Toast from "./Toast";
 
 function UserPills({ users }) {
-    if (!users || users.length === 0)
+    if (!Array.isArray(users) || users.length === 0)
         return <span style={{ color: "#bbb", fontSize: 12 }}>—</span>;
     return (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
@@ -19,9 +19,26 @@ function UserPills({ users }) {
 }
 
 function DeviceWsCard({ device }) {
-    const ctrl   = device.control  || {};
-    const stream = device.stream   || {};
-    const data   = device.data     || [];
+    const ctrl = {
+        admins: Array.isArray(device.control?.admins) ? device.control.admins : [],
+        operators: Array.isArray(device.control?.operators) ? device.control.operators : [],
+        viewers: Array.isArray(device.control?.viewers) ? device.control.viewers : [],
+        device: device.control?.device || false,
+    };
+
+    const stream = {
+        admins: Array.isArray(device.stream?.admins) ? device.stream.admins : [],
+        operators: Array.isArray(device.stream?.operators) ? device.stream.operators : [],
+        viewers: Array.isArray(device.stream?.viewers) ? device.stream.viewers : [],
+        device: device.stream?.device || false,
+    };
+
+    const data = {
+        admins: Array.isArray(device.data?.admins) ? device.data.admins : [],
+        operators: Array.isArray(device.data?.operators) ? device.data.operators : [],
+        viewers: Array.isArray(device.data?.viewers) ? device.data.viewers : [],
+        device: device.data?.device || false,
+    };
 
     return (
         <div className="device-card">
@@ -66,14 +83,42 @@ function DeviceWsCard({ device }) {
 
                 {/* Stream */}
                 <div>
-                    <div className="ws-col-label">Stream users</div>
-                    <UserPills users={stream.users} />
+                    <div className="ws-col-label">Stream</div>
+
+                    <div style={{ marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, color: "#999", marginRight: 4 }}>Admins</span>
+                        <UserPills users={stream.admins} />
+                    </div>
+
+                    <div style={{ marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, color: "#999", marginRight: 4 }}>Operators</span>
+                        <UserPills users={stream.operators} />
+                    </div>
+
+                    <div>
+                        <span style={{ fontSize: 10, color: "#999", marginRight: 4 }}>Viewers</span>
+                        <UserPills users={stream.viewers} />
+                    </div>
                 </div>
 
                 {/* Data */}
                 <div>
-                    <div className="ws-col-label">Data subscribers</div>
-                    <UserPills users={data} />
+                    <div className="ws-col-label">Data</div>
+
+                    <div style={{ marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, color: "#999", marginRight: 4 }}>Admins</span>
+                        <UserPills users={data.admins} />
+                    </div>
+
+                    <div style={{ marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, color: "#999", marginRight: 4 }}>Operators</span>
+                        <UserPills users={data.operators} />
+                    </div>
+
+                    <div>
+                        <span style={{ fontSize: 10, color: "#999", marginRight: 4 }}>Viewers</span>
+                        <UserPills users={data.viewers} />
+                    </div>
                 </div>
             </div>
         </div>
@@ -81,10 +126,10 @@ function DeviceWsCard({ device }) {
 }
 
 export default function Ws() {
-    const [rooms, setRooms]     = useState([]);
+    const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError]     = useState("");
-    const [toast, setToast]     = useState(null);
+    const [error, setError] = useState("");
+    const [toast, setToast] = useState(null);
 
     const fetchWs = useCallback(async () => {
         setLoading(true);
@@ -120,7 +165,7 @@ export default function Ws() {
             {!error && rooms.length > 0 && (
                 <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
                     {[
-                        { label: "Rooms",   value: rooms.length },
+                        { label: "Rooms", value: rooms.length },
                         { label: "Devices", value: rooms.reduce((s, r) => s + (r.devices?.length || 0), 0) },
                         { label: "Stream users", value: totalUsers, accent: true },
                     ].map(s => (

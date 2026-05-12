@@ -1,15 +1,10 @@
 package ussoi.WebSocket.Handler.User;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.*;
 import ussoi.SessionHandler.Device.DeviceSession;
 import ussoi.SessionHandler.Registry.UserSessionRegistry;
-import ussoi.WebApp.DevicePage.UserCommandRouter;
-
-import static ussoi.Security.AuthenticationService.AuthService.getUserRole;
 
 /**
  * *****************************************************************************
@@ -54,6 +49,9 @@ public class UserStreamHandler extends SimpleChannelInboundHandler<WebSocketFram
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         if (deviceSession != null){
+
+            System.out.println("[DEBUG] + [UserStreamHandler] +  user added  Dev Id :" + deviceId  );
+
             deviceSession.addUserToStreamPool(userId, ctx.channel());
         }
     }

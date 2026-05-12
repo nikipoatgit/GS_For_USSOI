@@ -15,7 +15,7 @@ import ussoi.SessionHandler.Device.PoolRegistry.StreamRegistry;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ussoi.Security.AuthenticationService.AuthService.buildControlUsers;
+import static ussoi.Security.AuthenticationService.AuthService.buildObjectNode;
 import static ussoi.UssoiStrings.*;
 import static ussoi.Utility.utilityMethods.parseJsonFromTextBody;
 
@@ -112,9 +112,8 @@ public class DeviceSession {
         controlWSRegistry.registerDevice(channel);
     }
 
-    // since this is one way no | assuming user has done this checkIfDeviceExist
-    private void addDeviceToStreamPool(Channel channel){
-        // streamRegistry.registerDevice(channel);
+    public void addDeviceToStreamPool(Channel channel){
+        streamRegistry.registerDevice(channel);
     }
 
     public void processUserMessage(JsonNode jsonNode) {
@@ -139,6 +138,7 @@ public class DeviceSession {
 
         UserCommandRouter.CommandHandler handler = commandMap.get(cmd);
         if (handler != null) {
+            // this saves / caches some cmds
             handler.handle(msg);
         }
         controlWSRegistry.broadcastToAll(msg);
@@ -153,17 +153,17 @@ public class DeviceSession {
         root.put("d_id", deviceId);
         root.put("d_name", deviceName);
 
-        ObjectNode control = buildControlUsers((ArrayNode) controlWSRegistry.getControlState(), controlWSRegistry.isDeviceConnected());
+        ObjectNode controlJson = buildObjectNode((ArrayNode) controlWSRegistry.getControlState(), controlWSRegistry.isDeviceConnected());
 
-        root.set("control", control);
+        root.set("control", controlJson);
 
         // stream
-        ObjectNode control2 = buildControlUsers((ArrayNode) streamRegistry.getControlState(),true);
-        root.set("stream", control2);
+        ObjectNode streamJson = buildObjectNode((ArrayNode) streamRegistry.getControlState(),streamRegistry.isDeviceConnected());
+        root.set("stream", streamJson);
 
         //  data
-        ObjectNode control3 = buildControlUsers((ArrayNode) streamRegistry.getControlState(),true);
-        root.set("data", control3);
+        ObjectNode dataJson = buildObjectNode((ArrayNode) streamRegistry.getControlState(),true);
+        root.set("data", dataJson);
 
         return root;
     }

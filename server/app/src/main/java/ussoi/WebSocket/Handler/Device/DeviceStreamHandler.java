@@ -60,9 +60,10 @@ public class DeviceStreamHandler extends SimpleChannelInboundHandler<WebSocketFr
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         // unidirectional flow
-//        if (deviceSession != null){
-//            deviceSession.addDeviceToStreamPool(ctx.channel());
-//        }
+        if (deviceSession != null){
+            System.out.println("[DEBUG] + [Stream] +  DEVICE ADDED  " + deviceId  );
+            deviceSession.addDeviceToStreamPool(ctx.channel());
+        }
         // connection established
     }
 

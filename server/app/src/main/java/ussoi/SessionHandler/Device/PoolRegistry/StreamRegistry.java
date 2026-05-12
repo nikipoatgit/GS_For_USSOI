@@ -34,7 +34,7 @@ public class StreamRegistry {
     private final ChannelGroup level1Channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     private final AtomicReference<Channel> deviceChannel = new AtomicReference<>();
 
-    private void registerDevice(Channel newChannel) {
+    public void registerDevice(Channel newChannel) {
 
         Channel oldChannel = deviceChannel.getAndSet(newChannel);
 
@@ -62,6 +62,11 @@ public class StreamRegistry {
         level1Channels.writeAndFlush(frame);
     }
 
+    public boolean isDeviceConnected(){
+        Channel ch = deviceChannel.get();
+        return ch != null && ch.isActive();
+    }
+
     public JsonNode getControlState() {
 
         ObjectMapper mapper = new ObjectMapper();
@@ -70,7 +75,7 @@ public class StreamRegistry {
         for (String uid : userChannels.keySet()) {
             users.add(uid);
         }
-
+        System.out.println("[DEBUG] + [Stream] +  broadcastToUsers " + users  );
         return users;
     }
 }
