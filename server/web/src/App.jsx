@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
-import DevicePage from "./pages/Device/DevicePage.jsx";
+import Device from "./pages/Device/DevicePage.jsx";
 import AdminPage from "./pages/Admin/AdminPage.jsx";
 
 export default function App() {
@@ -11,7 +11,7 @@ export default function App() {
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/home" element={<HomePage />} />
-                <Route path="/Device/:DeviceId" element={<DevicePage />} />
+                <Route path="/Device/:DeviceId" element={<Device />} />
                 <Route path="/admin" element={<AdminPage />} />
 
                 {/* default */}

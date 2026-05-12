@@ -68,26 +68,27 @@ public class WebSocketRouter extends ChannelInboundHandlerAdapter {
             close(ctx);
             return;
         }
+        // this has to be at top cause then userRoute will match then it wil handle ws
+        if (userStreamRoute.matches(uri)) {
+            System.out.println("userStreamRoute.matches :" +uri);
+            userStreamRoute.handle(ctx, uri, token);
+            return;
+        }
 
         if (userRoute.matches(uri)) {
-            System.out.println("userRoute.matches");
+            System.out.println("userRoute.matches :" +uri);
             userRoute.handle(ctx, uri, token);
             return;
         }
 
         if (deviceControlRoute.matches(uri)) {
-            System.out.println("deviceControlRoute.matches");
+            System.out.println("deviceControlRoute.matches :" +uri);
             deviceControlRoute.handle(ctx, uri, token);
             return;
         }
 
-        if (userStreamRoute.matches(uri)) {
-            System.out.println("userRoute.matches");
-            userStreamRoute.handle(ctx, uri, token);
-            return;
-        }
         if (deviceStreamRoute.matches(uri)) {
-            System.out.println("deviceStreamRoute.matches");
+            System.out.println("deviceStreamRoute.matches :" +uri);
             deviceStreamRoute.handle(ctx, uri, token);
             return;
         }

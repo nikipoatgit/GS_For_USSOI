@@ -75,7 +75,7 @@ public final class UssoiStrings {
     public static final String MUTE         = "mute";
     public static final String FLIP         = "flip";
 
-    public static final String WEBRTC_OFFER = "webrtc_offer";
+    public static final String WEBRTC_SDP = "webrtc_sdp";
     public static final String WEBRTC_ICE   = "webrtc_ice";
 
     // Cache / Query Commands
@@ -84,6 +84,7 @@ public final class UssoiStrings {
     public static final String GET_PARAMS   = "get_params";
 
     public static final String TELEMETRY   = "t";
+
 
     // Status Values
     public static final String STATUS_OK    = "ok";

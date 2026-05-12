@@ -4,13 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.netty.handler.codec.http.cookie.Cookie;
-import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import ussoi.Utility.Role;
 import ussoi.Utility.utilityMethods;
 
 import java.sql.*;
-import java.util.Set;
 
 import static ussoi.Storage.DB.Database.getConnection;
 import static ussoi.Utility.utilityMethods.extractSession;
@@ -140,7 +137,7 @@ public class AuthService {
         }
     }
 
-    public static ObjectNode buildControlUsers(ArrayNode uids,boolean isDeviceAlive) {
+    public static ObjectNode buildObjectNode(ArrayNode uids, boolean isDeviceAlive) {
 
         ObjectMapper mapper = new ObjectMapper();
 
