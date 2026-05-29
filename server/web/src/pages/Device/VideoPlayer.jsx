@@ -209,22 +209,37 @@ export function VideoPlayer({
                 MozOsxFontSmoothing: "grayscale",
             }}
         >
-            {/* Video element */}
-            <video
-                ref={videoRef}
-                style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                    display: "block",
-                    transform: videoTransform,
-                    transformOrigin: "center center",
-                    transition: "transform 0.18s ease",
-                }}
-                autoPlay
-                playsInline
-                muted
-            />
+            {/* WebRTC uses <video>; H264/MSE uses <canvas> decoded via WebCodecs */}
+            {streamMode === "mse" ? (
+                <canvas
+                    ref={videoRef}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                        display: "block",
+                        transform: videoTransform,
+                        transformOrigin: "center center",
+                        transition: "transform 0.18s ease",
+                    }}
+                />
+            ) : (
+                <video
+                    ref={videoRef}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                        display: "block",
+                        transform: videoTransform,
+                        transformOrigin: "center center",
+                        transition: "transform 0.18s ease",
+                    }}
+                    autoPlay
+                    playsInline
+                    muted
+                />
+            )}
 
             {/* Status indicators */}
             <StatusRow indicators={indicators} streamMode={streamMode}/>

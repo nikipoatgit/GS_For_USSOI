@@ -59,7 +59,7 @@ export function useWebSocket({
     wsRef.current = ws;
 
     ws.onopen = () => {
-      onLog("info", "WebSocket", `Connected · ${id} · ${new Date().toLocaleTimeString()}`);
+      onLog("info", "WebSocket", `connected · ${url} · ${new Date().toLocaleTimeString()}`);
       clearTimeout(reconnectTimer.current);
       reconnectTimer.current = null;
       if (bootstrapOnOpen) {

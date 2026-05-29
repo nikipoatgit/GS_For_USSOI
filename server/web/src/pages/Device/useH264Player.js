@@ -1,76 +1,158 @@
-// features/video/useH264Player.js
-// MSE-based H.264 player hook.
-// Backend MUST send fragmented MP4 (fMP4) — raw NAL units won't work with MSE.
+// Packet layout from Android buildPacket():
+//   [0]      1 byte   keyframe flag (1 = keyframe, 0 = delta)
+//   [1..8]   8 bytes  relative PTS in microseconds, big-endian
+//   [9+]     N bytes  raw H.264 Annex-B NAL unit(s)
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 
-const MIME = 'video/mp4; codecs="avc1.42E01E"';
+// 17-byte packets = 9 header + 8 bytes of NAL — these are filler/SEI units
+// emitted by MediaCodec between frames. They carry no video data and will
+// crash the decoder. Any packet whose NAL payload is under 16 bytes is skipped.
+const MIN_NAL_BYTES = 16;
 
 export function useH264Player() {
-  const msRef  = useRef(null);
-  const sbRef  = useRef(null);
-  const vidRef = useRef(null);
-  const queue  = useRef([]);
-  const ready  = useRef(false);
+  const decoderRef    = useRef(null);
+  const canvasRef     = useRef(null);
+  const ctxRef        = useRef(null);
+  const configuredRef = useRef(false);
 
-  const drain = useCallback(() => {
-    if (!sbRef.current || sbRef.current.updating || queue.current.length === 0) return;
-    const chunk = queue.current.shift();
-    try {
-      sbRef.current.appendBuffer(chunk);
-    } catch (e) {
-      console.error("[H264] appendBuffer:", e);
+  // ---------------------------------------------------------------------------
+  // Decoder lifecycle
+  // ---------------------------------------------------------------------------
+
+  const initDecoder = useCallback((canvas) => {
+    if (!("VideoDecoder" in window)) {
+      console.error("[H264] WebCodecs not supported in this browser.");
+      return;
     }
+
+    canvasRef.current = canvas;
+    ctxRef.current    = canvas.getContext("2d");
+
+    const decoder = new VideoDecoder({
+      output: (frame) => {
+        const ctx = ctxRef.current;
+        const cv  = canvasRef.current;
+        if (!ctx || !cv) { frame.close(); return; }
+        if (cv.width !== frame.displayWidth || cv.height !== frame.displayHeight) {
+          cv.width  = frame.displayWidth;
+          cv.height = frame.displayHeight;
+        }
+        ctx.drawImage(frame, 0, 0);
+        frame.close();
+      },
+      error: (e) => {
+        console.error("[H264] VideoDecoder error:", e);
+        configuredRef.current = false;
+      },
+    });
+
+    decoderRef.current    = decoder;
+    configuredRef.current = false;
+    console.log("[H264] VideoDecoder created");
   }, []);
 
-  const attachVideo = useCallback((videoEl) => {
-    if (!videoEl || msRef.current) return;
-    if (!MediaSource.isTypeSupported(MIME)) {
-      console.error("[H264] MIME not supported:", MIME);
-      return;
-    }
+  const configureDecoder = useCallback(() => {
+    const decoder = decoderRef.current;
+    if (!decoder || decoder.state === "closed") return;
 
-    vidRef.current = videoEl;
-    const ms = new MediaSource();
-    msRef.current = ms;
-    videoEl.src = URL.createObjectURL(ms);
-
-    ms.addEventListener("sourceopen", () => {
-      const sb = ms.addSourceBuffer(MIME);
-      sb.mode = "sequence";
-      sb.addEventListener("updateend", drain);
-      sbRef.current = sb;
-      ready.current = true;
-      console.log("[H264] SourceBuffer ready");
+    // *** DO NOT add a `description` field here. ***
+    //
+    // `description` expects AVCC binary format — the avcC box from inside
+    // an MP4 container. Its layout is:
+    //   [version, profile, compat, level, 0xFF, 0xE1, spsLen(2), sps...,
+    //    0x01, ppsLen(2), pps...]
+    //
+    // The Android encoder outputs raw Annex-B NAL units:
+    //   [0x00, 0x00, 0x00, 0x01, 0x67, ...]
+    //
+    // These are completely different binary formats. Passing Annex-B bytes
+    // as `description` is exactly what causes "Failed to parse avcC".
+    //
+    // Without `description`, the decoder reads SPS/PPS in-band from the
+    // Annex-B stream — which works because Android's MediaCodec prepends
+    // SPS + PPS NAL units to every keyframe automatically.
+    decoder.configure({
+      codec: "avc1.42E01E",        // H.264 Baseline 3.0 — Android encoder default
+      optimizeForLatency: true,
     });
-  }, [drain]);
+
+    configuredRef.current = true;
+    console.log("[H264] VideoDecoder configured");
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Public: feed a raw WebSocket binary message (must be ArrayBuffer)
+  // ---------------------------------------------------------------------------
 
   const feedFrame = useCallback((ab) => {
-    if (!ready.current || !(ab instanceof ArrayBuffer)) return;
-    // Strip first 9 bytes (custom header) — remainder is fMP4 payload
-    const payload = ab.slice(9);
-    if (!payload || payload.byteLength < 5) {
-      console.warn("[H264] invalid frame (byteLength < 5)");
+    if (!(ab instanceof ArrayBuffer)) return;
+
+    // Skip filler/SEI packets — NAL payload too small to be a video frame.
+    if (ab.byteLength < 9 + MIN_NAL_BYTES) {
+      console.debug("[H264] skipping tiny packet (" + ab.byteLength + " bytes)");
       return;
     }
-    queue.current.push(payload);
-    drain();
-  }, [drain]);
+
+    const decoder = decoderRef.current;
+    if (!decoder) { console.warn("[H264] feedFrame called before initDecoder"); return; }
+    if (decoder.state === "closed") return;
+
+    const view       = new DataView(ab);
+    const isKeyFrame = view.getUint8(0) === 1;
+
+    // 8-byte big-endian PTS — no getUint64, so read as two 32-bit halves.
+    const ptsUs = view.getUint32(1, false) * 0x100000000 + view.getUint32(5, false);
+
+    // Zero-copy view of the NAL bytes starting at byte 9.
+    const nalData = new Uint8Array(ab, 9);
+
+    // Configure on the first keyframe. SPS+PPS are already prepended to the
+    // NAL data by the Android encoder — no description needed.
+    if (isKeyFrame && !configuredRef.current) {
+      configureDecoder();
+    }
+
+    if (!configuredRef.current) return; // drop delta frames until configured
+
+    try {
+      decoder.decode(new EncodedVideoChunk({
+        type:      isKeyFrame ? "key" : "delta",
+        timestamp: ptsUs,
+        data:      nalData,
+      }));
+    } catch (e) {
+      console.error("[H264] decode error:", e);
+    }
+  }, [configureDecoder]);
+
+  // ---------------------------------------------------------------------------
+  // Public: reset — call on WebSocket reconnect or Android stream restart
+  // ---------------------------------------------------------------------------
 
   const reset = useCallback(() => {
     console.log("[H264] reset");
-    ready.current = false;
-    queue.current = [];
-    try { sbRef.current?.abort(); } catch {}
-    sbRef.current = null;
-    try { msRef.current?.endOfStream(); } catch {}
-    msRef.current = null;
-    if (vidRef.current) {
-      URL.revokeObjectURL(vidRef.current.src);
-      vidRef.current.src = "";
-      vidRef.current = null;
+    configuredRef.current = false;
+    const decoder = decoderRef.current;
+    if (decoder && decoder.state !== "closed") {
+      try { decoder.reset(); } catch (e) { console.warn("[H264] reset error:", e); }
     }
   }, []);
 
-  return { attachVideo, feedFrame, reset };
+  // ---------------------------------------------------------------------------
+  // Cleanup on unmount
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    return () => {
+      const decoder = decoderRef.current;
+      if (decoder && decoder.state !== "closed") {
+        try { decoder.close(); } catch {}
+      }
+    };
+  }, []);
+
+  // Usage: pass a <canvas> element to initDecoder, NOT a <video>.
+  // Make sure your WebSocket sets: ws.binaryType = "arraybuffer"
+  return { initDecoder, feedFrame, reset };
 }

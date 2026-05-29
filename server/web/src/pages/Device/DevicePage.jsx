@@ -205,7 +205,7 @@ export default function Devicge() {
 
     // ── Hooks ──────────────────────────────────────────────────────────────────
     const {
-        attachVideo,
+        initDecoder: attachVideo,
         feedFrame,
         reset: resetH264Player,
     } = useH264Player();
