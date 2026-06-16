@@ -31,6 +31,27 @@ flowchart TD
 ```
 Default every 3 sec 
 
+| Offset | Size   | Type                              | Field              |
+| ------ | ------ | --------------------------------- | ------------------ |
+| 0      | 2      | short                             | current            |
+| 2      | 1      | byte                              | battery level      |
+| 3      | 4      | float                             | battery temp       |
+| 7      | 1      | byte                              | thermal status     |
+| 8      | 2      | short                             | cellular dBm       |
+| 10     | 2      | short                             | wifi dBm           |
+| 12     | 1      | byte                              | network type       |
+| 13     | 1      | byte                              | data network type  |
+| 14     | 4      | int                               | upload KB/s ×100   |
+| 18     | 4      | int                               | download KB/s ×100 |
+| 22     | 4      | int                               | session MB ×100    |
+| 26     | 4      | float                             | latitude           |
+| 30     | 4      | float                             | longitude          |
+| 34     | 4      | float                             | accuracy           |
+| 38     | 4      | float                             | speed              |
+| 42     | 4      | float                             | altitude           |
+| 46     | ½ byte | status nibble encoded as hex char |                    |
+
+
 
 ```mermaid
 flowchart TD

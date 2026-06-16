@@ -53,8 +53,7 @@ public class DeviceStreamHandler extends SimpleChannelInboundHandler<WebSocketFr
     }
 
     private void handleBinary(ChannelHandlerContext ctx, ByteBuf buf) {
-        deviceSession.broadcastToStreamUserPool(buf.retain());
-        // optional
+        deviceSession.broadcastToStreamUserPool(buf);
     }
 
     @Override

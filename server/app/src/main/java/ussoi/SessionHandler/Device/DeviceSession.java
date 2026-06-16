@@ -99,8 +99,8 @@ public class DeviceSession {
         streamRegistry.registerUser(userId,channel);
     }
 
-    public void broadcastToStreamUserPool(ByteBuf retain){
-        streamRegistry.broadcastToUsers(retain);
+    public void broadcastToStreamUserPool(ByteBuf buf) {
+        streamRegistry.broadcastToUsers(buf);
     }
 
     public boolean checkIfUserExistInWsRegistry(String userId){

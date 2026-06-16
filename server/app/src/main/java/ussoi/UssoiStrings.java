@@ -18,7 +18,7 @@ package ussoi;
  */
 public final class UssoiStrings {
     public static final int HTTP_PORT = 8000;
-    public static final String HTTP_IP = "127.0.0.1";
+    public static final String HTTP_IP = "0.0.0.0";
 
     public static final String PARAMS_NOT_SET = "Params Not Set";
     public static final String UNKNOWN_CMD_TIMEOUT = "Unknown Command / Timeout";

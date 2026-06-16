@@ -64,7 +64,7 @@ public final class ControlRegistry implements ControlMessageDispatcher {
 
     public void registerUser(String userId, Channel channel, Role role) {
         userChannels.put(userId, channel);
-        System.out.println("[DEBUG] + registerUser " + userId );
+        System.out.println("[DEBUG] + [control] + registerUser " + userId );
 
         switch (role) {
             case ADMIN:
@@ -91,6 +91,7 @@ public final class ControlRegistry implements ControlMessageDispatcher {
         });
     }
 
+    //todo  this is wrong need to change if used
     public void sendToUser(String userId, Object frame) {
         Channel ch = userChannels.get(userId);
         if (ch != null && ch.isActive()) {
@@ -98,6 +99,7 @@ public final class ControlRegistry implements ControlMessageDispatcher {
         }
     }
 
+    //todo  this is wrong need to change if used
     public void broadcastToUsers(Object frame) {
         level3Channels.writeAndFlush(frame);
     }

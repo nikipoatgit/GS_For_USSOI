@@ -1,543 +1,674 @@
 // features/settings/SettingsPanel.jsx
 
-import { useState } from "react";
 import { C, inputSx, btnSx } from "../../shared/theme.js";
+import { useEffect, useState, useRef } from "react";
 import {
-  Btn as BtnLocal,
-  Divider as DividerShared,
   SLabel as SLabelLocal,
-  StateBadge as StateBadgeLocal,
   Chip as ChipLocal,
-  CloseBtn as CloseBtnLocal
+  CloseBtn as CloseBtnLocal,
 } from "../../shared/ui.jsx";
 
-function QPanel({
-                  cameraRes,
-                  onStreamRes,
-                  onRecordRes,
-                  onStreamBitrate,
-                  onRecordBitrate,
-                  onClose
-                }) {
-  const cameras =
-      cameraRes?.cameras ??
-      (cameraRes?.resolutions
-          ? [{ cameraId: "0", normal: cameraRes.resolutions }]
-          : []);
+const QUALITY_STORAGE_KEY = "gcs.ussoi.device.quality.v1";
 
-  const [camIdx, setCamIdx] = useState(0);
-  const [w, setW] = useState(1280);
-  const [h, setH] = useState(720);
-  const [fpsList, setFpsList] = useState([30]);
-  const [fps, setFps] = useState(30);
-  const [sBps, setSBps] = useState(2000);
-  const [rBps, setRBps] = useState(8000);
+const DEFAULT_QUALITY_STATE = {
+  normal: {
+    camIdx: 0,
+    w: 1280,
+    h: 720,
+    fps: 30,
+    fpsList: [30],
+    streamKbps: 60,
+    recordKbps: 2000,
+  },
+  high_speed: {
+    camIdx: 0,
+    w: 1280,
+    h: 720,
+    fps: 30,
+    fpsList: [30],
+    streamKbps: 60,
+    recordKbps: 2000,
+  },
+};
 
-  const resolutions = cameras[camIdx]?.normal ?? [];
+let QUALITY_STATE_CACHE = loadQualityState();
 
-  const pickPreset = (res) => {
-    setW(res.width);
-    setH(res.height);
+function cloneDefaultQualityState() {
+  return JSON.parse(JSON.stringify(DEFAULT_QUALITY_STATE));
+}
 
-    const maxes = [
-      ...new Set(res.fpsRanges?.map((r) => r.max) ?? [30]),
-    ].sort((a, b) => a - b);
+function loadQualityState() {
+  if (typeof window === "undefined") return cloneDefaultQualityState();
+  try {
+    const raw = window.localStorage.getItem(QUALITY_STORAGE_KEY);
+    if (!raw) return cloneDefaultQualityState();
+    const parsed = JSON.parse(raw);
+    return {
+      normal: { ...DEFAULT_QUALITY_STATE.normal, ...(parsed.normal ?? {}) },
+      high_speed: { ...DEFAULT_QUALITY_STATE.high_speed, ...(parsed.high_speed ?? {}) },
+    };
+  } catch {
+    return cloneDefaultQualityState();
+  }
+}
 
-    setFpsList(maxes);
-    setFps(maxes[maxes.length - 1]);
+function persistQualityState(nextState) {
+  QUALITY_STATE_CACHE = nextState;
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(QUALITY_STORAGE_KEY, JSON.stringify(nextState));
+  } catch {
+    // Ignore storage failures and keep the in-memory cache.
+  }
+}
+
+function cloneQualityState() {
+  return {
+    normal: { ...QUALITY_STATE_CACHE.normal },
+    high_speed: { ...QUALITY_STATE_CACHE.high_speed },
+  };
+}
+
+function clampIndex(value, max) {
+  if (max < 0) return 0;
+  return Math.min(Math.max(Number(value) || 0, 0), max);
+}
+
+function normalizeFpsList(res) {
+  return [...new Set(res.fpsRanges?.map((r) => r.max) ?? [30])].sort((a, b) => a - b);
+}
+
+function isHighSpeedQualityMode(streamMode, highFpsMode) {
+  if (highFpsMode === true) return true;
+  const mode = String(streamMode ?? "").toLowerCase();
+  return mode === "hfh264" || mode === "hf_h264" || mode === "hspeed" || mode === "high_speed" || mode === "highspeed";
+}
+
+// ─── PresetScroll ─────────────────────────────────────────────────────────────
+// Horizontal preset strip with:
+//   • mouse-wheel scrolling (wheel event, no edge-hover)
+//   • ‹ › arrow buttons for keyboard/touch navigation
+
+function PresetScroll({ resolutions, w, h, onPick }) {
+  const scrollRef = useRef(null);
+  const STEP = 120;
+
+  const scroll = (delta) => {
+    if (scrollRef.current) scrollRef.current.scrollLeft += delta;
   };
 
-  const pickCamera = (idx) => {
-    setCamIdx(idx);
-    const first = cameras[idx]?.normal?.[0];
-    if (first) pickPreset(first);
+  const handleWheel = (e) => {
+    e.preventDefault();
+    scroll(e.deltaY !== 0 ? e.deltaY : e.deltaX);
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  const arrowSx = {
+    ...btnSx,
+    flexShrink: 0,
+    width: 24,
+    height: 26,
+    borderRadius: 7,
+    border: `1px solid ${C.line}`,
+    background: "transparent",
+    color: C.t2,
+    fontSize: 13,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 0,
   };
 
   return (
+    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+      <button style={arrowSx} onClick={() => scroll(-STEP)} aria-label="Scroll presets left">‹</button>
+
       <div
-          className="panel-slide-up"
-          style={{
-            background: C.surface,
-            border: `1px solid ${C.lineMd}`,
-            boxShadow: "0 18px 48px rgba(0,0,0,0.42)",
-            borderRadius: 16,
-            display: "flex",
-            alignSelf: "flex-start",
-            overflow: "hidden",
-          }}
+        ref={scrollRef}
+        style={{
+          display: "flex",
+          gap: 4,
+          flex: 1,
+          overflowX: "auto",
+          overflowY: "hidden",
+          scrollbarWidth: "none",
+          paddingBottom: 1,
+        }}
       >
-        {/* LEFT */}
-        <div
-            style={{
-              width: 150,
-              borderRight: `1px solid ${C.line}`,
-              padding: 10,
-              display: "flex",
-              flexDirection: "column",
-            }}
-        >
-          <div
+        {resolutions.map((res) => {
+          const active = res.width === w && res.height === h;
+          return (
+            <button
+              key={`${res.width}x${res.height}`}
+              onClick={() => onPick(res)}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-          >
-            <SLabelLocal>Presets</SLabelLocal>
-            <CloseBtnLocal onClick={onClose} />
-          </div>
-
-          {cameras.length > 1 && (
-              <div
-                  style={{
-                    display: "flex",
-                    gap: 5,
-                    marginBottom: 8,
-                    flexWrap: "wrap",
-                  }}
-              >
-                {cameras.map((cam, idx) => (
-                    <ChipLocal
-                        key={cam.cameraId}
-                        active={camIdx === idx}
-                        onClick={() => pickCamera(idx)}
-                    >
-                      Cam {cam.cameraId}
-                    </ChipLocal>
-                ))}
-              </div>
-          )}
-
-          {resolutions.length === 0 ? (
-              <p
-                  style={{
-                    color: C.t2,
-                    fontSize: 10,
-                    fontStyle: "italic",
-                  }}
-              >
-                Waiting...
-              </p>
-          ) : (
-              <div
-                  style={{
-                    overflowY: "auto",
-                    maxHeight: 180,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 6,
-                  }}
-              >
-                {resolutions.map((res) => {
-                  const active = res.width === w && res.height === h;
-
-                  return (
-                      <button
-                          key={`${res.width}x${res.height}`}
-                          onClick={() => pickPreset(res)}
-                          style={{
-                            ...btnSx,
-                            padding: "5px 7px",
-                            textAlign: "left",
-                            borderRadius: 12,
-                            background: active
-                                ? "#0d1f3a"
-                                : "transparent",
-                            border: `1px solid ${
-                                active
-                                    ? C.blue + "60"
-                                    : C.line
-                            }`,
-                            color: active ? C.blue : C.t1,
-                            fontSize: 11,
-                          }}
-                      >
-                        {res.width}×{res.height}
-                      </button>
-                  );
-                })}
-              </div>
-          )}
-
-          <div style={{ marginTop: 8 }}>
-            <SLabelLocal>FPS</SLabelLocal>
-
-            <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 5,
-                }}
-            >
-              {fpsList.map((f) => (
-                  <ChipLocal
-                      key={f}
-                      active={fps === f}
-                      onClick={() => setFps(f)}
-                  >
-                    {f}
-                  </ChipLocal>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginTop: 8 }}>
-            <div style={{ display: "flex", gap: 6 }}>
-              <AccentBtn
-                  color={"#22c55e"}
-                  onClick={() => onStreamRes(w, h, fps)}
-              >
-                Stream
-              </AccentBtn>
-
-              <AccentBtn
-                  color={"#d4870f"}
-                  onClick={() => onRecordRes(w, h, fps)}
-              >
-                Record
-              </AccentBtn>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT */}
-        <div
-            style={{
-              width: 145,
-              padding: 10,
-            }}
-        >
-          <SLabelLocal>Bitrate</SLabelLocal>
-
-          <p
-              style={{
+                ...btnSx,
+                flexShrink: 0,
+                padding: "4px 9px",
+                borderRadius: 8,
                 fontSize: 11,
-                color: "#22c55e",
-                marginBottom: 5,
+                color: active ? C.t0 : C.t2,
+                background: active ? C.raised : "transparent",
+                border: `1px solid ${active ? C.lineMd : C.line}`,
+                whiteSpace: "nowrap",
               }}
-          >
-            Stream
-          </p>
-
-          <div
-              style={{
-                display: "flex",
-                gap: 6,
-                marginBottom: 10,
-              }}
-          >
-            <input
-                type="number"
-                value={sBps}
-                min={100}
-                step={100}
-                onChange={(e) => setSBps(+e.target.value)}
-                style={{
-                  ...inputSx,
-                  flex: 1,
-                  height: 30,
-                  fontSize: 11,
-                }}
-            />
-
-            <AccentBtn
-                color={"#22c55e"}
-                onClick={() => onStreamBitrate(sBps)}
             >
-              OK
-            </AccentBtn>
-          </div>
-
-          <p
-              style={{
-                fontSize: 11,
-                color: "#d4870f",
-                marginBottom: 5,
-              }}
-          >
-            Record
-          </p>
-
-          <div
-              style={{
-                display: "flex",
-                gap: 6,
-              }}
-          >
-            <input
-                type="number"
-                value={rBps}
-                min={100}
-                step={500}
-                onChange={(e) => setRBps(+e.target.value)}
-                style={{
-                  ...inputSx,
-                  flex: 1,
-                  height: 30,
-                  fontSize: 11,
-                }}
-            />
-
-            <AccentBtn
-                color={"#d4870f"}
-                onClick={() => onRecordBitrate(rBps)}
-            >
-              OK
-            </AccentBtn>
-          </div>
-        </div>
+              {res.width}×{res.height}
+            </button>
+          );
+        })}
       </div>
+
+      <button style={arrowSx} onClick={() => scroll(STEP)} aria-label="Scroll presets right">›</button>
+    </div>
   );
 }
 
+// ─── QPanel ──────────────────────────────────────────────────────────────────
+
+function QPanel({
+  cameraRes,
+  isHighFpsMode,
+  onStreamRes,
+  onRecordRes,
+  onStreamBitrate,
+  onRecordBitrate,
+  onClose,
+}) {
+  const cameras =
+    cameraRes?.cameras ??
+    (cameraRes?.resolutions ? [{ cameraId: "0", normal: cameraRes.resolutions }] : []);
+  const isLoadingPresets = cameraRes == null;
+  const qualityBucket = isHighFpsMode ? "high_speed" : "normal";
+
+  const [camIdx, setCamIdx] = useState(0);
+  const [w, setW] = useState(DEFAULT_QUALITY_STATE.normal.w);
+  const [h, setH] = useState(DEFAULT_QUALITY_STATE.normal.h);
+  const [fpsList, setFpsList] = useState([30]);
+  const [fps, setFps] = useState(DEFAULT_QUALITY_STATE.normal.fps);
+  const [sKBps, setSKBps] = useState(DEFAULT_QUALITY_STATE.normal.streamKbps);
+  const [rKBps, setRKBps] = useState(DEFAULT_QUALITY_STATE.normal.recordKbps);
+
+  const currentCamera = cameras[camIdx] ?? null;
+  const allResolutions = isHighFpsMode
+    ? (currentCamera?.high_speed ?? [])
+    : (currentCamera?.normal ?? []);
+  const resolutions = allResolutions;
+
+  const commitBucket = (updater) => {
+    const nextState = cloneQualityState();
+    nextState[qualityBucket] = updater(nextState[qualityBucket]);
+    persistQualityState(nextState);
+  };
+
+  const applyPreset = (res, nextFps, streamKbps = sKBps, recordKbps = rKBps, nextCamIdx = camIdx) => {
+    const fpsOptions = normalizeFpsList(res);
+    const resolvedFps = fpsOptions.includes(nextFps) ? nextFps : fpsOptions[fpsOptions.length - 1];
+
+    setCamIdx(nextCamIdx);
+    setW(res.width);
+    setH(res.height);
+    setFpsList(fpsOptions);
+    setFps(resolvedFps);
+    setSKBps(streamKbps);
+    setRKBps(recordKbps);
+
+    commitBucket((bucketState) => ({
+      ...bucketState,
+      camIdx: nextCamIdx,
+      w: res.width,
+      h: res.height,
+      fps: resolvedFps,
+      fpsList: fpsOptions,
+      streamKbps,
+      recordKbps,
+    }));
+  };
+
+  useEffect(() => {
+    if (isLoadingPresets || cameras.length === 0) return;
+
+    const saved = QUALITY_STATE_CACHE[qualityBucket] ?? DEFAULT_QUALITY_STATE[qualityBucket];
+    const nextCamIdx = clampIndex(saved.camIdx, cameras.length - 1);
+
+    const targetList = isHighFpsMode
+      ? (cameras[nextCamIdx]?.high_speed ?? [])
+      : (cameras[nextCamIdx]?.normal ?? []);
+    if (targetList.length === 0) return;
+
+    const target =
+      targetList.find((res) => res.width === saved.w && res.height === saved.h) ?? targetList[0];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    applyPreset(target, saved.fps, saved.streamKbps, saved.recordKbps, nextCamIdx);
+  }, [cameraRes, camIdx, isHighFpsMode, isLoadingPresets, qualityBucket]);
+
+  const pickPreset = (res) => applyPreset(res, fps, sKBps, rKBps, camIdx);
+
+  const pickCamera = (idx) => {
+    const nextCamIdx = clampIndex(idx, cameras.length - 1);
+    const first = (
+      isHighFpsMode
+        ? (cameras[nextCamIdx]?.high_speed ?? [])
+        : (cameras[nextCamIdx]?.normal ?? [])
+    )[0];
+    if (first) applyPreset(first, fps, sKBps, rKBps, nextCamIdx);
+  };
+
+  return (
+    <div
+      className="panel-slide-up"
+      style={{
+        background: C.surface,
+        border: `1px solid ${C.lineMd}`,
+        boxShadow: "0 8px 28px rgba(0,0,0,0.18)",
+        borderRadius: 14,
+        display: "flex",
+        flexDirection: "column",
+        alignSelf: "flex-end",
+        overflow: "hidden",
+        width: 300,
+        color: C.t0,
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "7px 10px",
+          borderBottom: `1px solid ${C.line}`,
+        }}
+      >
+        <span style={{ fontSize: 11, fontWeight: 600, color: C.t1, letterSpacing: 0.4 }}>
+          Quality
+        </span>
+        <CloseBtnLocal onClick={onClose} />
+      </div>
+
+      <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+
+        {/* Camera tabs */}
+        {cameras.length > 1 && (
+          <div style={{ display: "flex", gap: 4 }}>
+            {cameras.map((cam, idx) => (
+              <ChipLocal key={cam.cameraId} active={camIdx === idx} onClick={() => pickCamera(idx)}>
+                Cam {cam.cameraId}
+              </ChipLocal>
+            ))}
+          </div>
+        )}
+
+        {/* Presets */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          <SLabelLocal>Presets</SLabelLocal>
+          {isLoadingPresets ? (
+            <span style={{ color: C.t2, fontSize: 10, fontStyle: "italic" }}>Loading…</span>
+          ) : resolutions.length === 0 ? (
+            <span style={{ color: C.t2, fontSize: 10, fontStyle: "italic" }}>No presets available.</span>
+          ) : (
+            <PresetScroll resolutions={resolutions} w={w} h={h} onPick={pickPreset} />
+          )}
+        </div>
+
+        {/* FPS */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          <SLabelLocal>FPS</SLabelLocal>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {fpsList.map((f) => (
+              <ChipLocal
+                key={f}
+                active={fps === f}
+                onClick={() => {
+                  setFps(f);
+                  commitBucket((s) => ({ ...s, fps: f }));
+                }}
+              >
+                {f}
+              </ChipLocal>
+            ))}
+          </div>
+        </div>
+
+        {/* Stream / Record apply */}
+        <div style={{ display: "flex", gap: 5 }}>
+          <SubtleBtn
+            onClick={() => {
+              onStreamRes(w, h, fps);
+              commitBucket((s) => ({ ...s, w, h, fps }));
+            }}
+          >
+            Apply stream
+          </SubtleBtn>
+          <SubtleBtn
+            onClick={() => {
+              onRecordRes(w, h, fps);
+              commitBucket((s) => ({ ...s, w, h, fps }));
+            }}
+          >
+            Apply record
+          </SubtleBtn>
+        </div>
+
+        {/* Bitrate */}
+        <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 8, display: "flex", flexDirection: "column", gap: 7 }}>
+          <SLabelLocal>Bitrate</SLabelLocal>
+
+          <BitrateRow
+            label="Stream"
+            value={sKBps}
+            min={5}
+            step={20}
+            onChange={(v) => {
+              setSKBps(v);
+              commitBucket((s) => ({ ...s, streamKbps: v }));
+            }}
+            onApply={() => {
+              onStreamBitrate(sKBps * 8);
+              commitBucket((s) => ({ ...s, streamKbps: sKBps }));
+            }}
+          />
+
+          <BitrateRow
+            label="Record"
+            value={rKBps}
+            min={100}
+            step={500}
+            onChange={(v) => {
+              setRKBps(v);
+              commitBucket((s) => ({ ...s, recordKbps: v }));
+            }}
+            onApply={() => {
+              onRecordBitrate(rKBps * 8);
+              commitBucket((s) => ({ ...s, recordKbps: rKBps }));
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SettingsPanel ────────────────────────────────────────────────────────────
+
 export function SettingsPanel({
-                                open,
-                                cameraRes,
-                                uiState,
-                                onChangeSetup,
-                                onStreamRes,
-                                onRecordRes,
-                                onStreamBitrate,
-                                onRecordBitrate,
-                                onStartRecord,
-                                onStartStream,
-                                onStopStream,
-                              }) {
+  open,
+  cameraRes,
+  streamMode,
+  highFpsMode,
+  uiState,
+  onChangeSetup,
+  onStreamRes,
+  onRecordRes,
+  onStreamBitrate,
+  onRecordBitrate,
+  onStartRecord,
+  onStopRecord,
+  onStartStream,
+  onStopStream,
+}) {
   const [qOpen, setQOpen] = useState(false);
 
   if (!open) return null;
 
   const recordState = uiState?.actions?.record ?? "IDLE";
-
-  const isRecording =
-      recordState === "ACTIVE" ||
-      recordState === "PROCESSING";
+  const isRecording = recordState === "ACTIVE" || recordState === "PROCESSING";
+  const useHighSpeedQuality = isHighSpeedQualityMode(streamMode, highFpsMode);
 
   return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: "calc(env(safe-area-inset-bottom, 0px) + 68px)",
+        right: 16,
+        zIndex: 100,
+        display: "flex",
+        flexDirection: "row-reverse",
+        gap: 8,
+        alignItems: "flex-end",
+      }}
+    >
+      {/* Main panel */}
       <div
-          style={{
-            position: "absolute",
-            top: 12,
-            right: 12,
-            zIndex: 30,
-            display: "flex",
-            flexDirection: "row-reverse",
-            gap: 6,
-            alignItems: "flex-start",
-          }}
+        className="panel-slide-up"
+        style={{
+          background: C.surface,
+          border: `1px solid ${C.lineMd}`,
+          boxShadow: "0 8px 28px rgba(0,0,0,0.18)",
+          width: 210,
+          padding: 8,
+          borderRadius: 14,
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+        }}
       >
-        {/* MAIN PANEL */}
-        <div
-            className="panel-slide-up"
-            style={{
-              background: C.surface,
-              border: `1px solid ${C.lineMd}`,
-              boxShadow: "0 18px 48px rgba(0,0,0,0.42)",
-              width: 190,
-              padding: 10,
-              borderRadius: 16,
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
+        <button
+          onClick={onChangeSetup}
+          style={{
+            ...btnSx,
+            height: 32,
+            width: "100%",
+            borderRadius: 10,
+            background: C.raised,
+            border: `1px solid ${C.line}`,
+            color: C.t0,
+            fontSize: 12,
+            fontWeight: 500,
+            cursor: "pointer",
+            padding: "0 10px",
+            textAlign: "left",
+          }}
         >
-          {/* STREAM MODE */}
-          <button
-              onClick={onChangeSetup}
-              style={{
-                height: 34,
-                width: "100%",
-                border: "none",
-                outline: "none",
-                borderRadius: 12,
-                background: C.raised,
-                color: C.t0,
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: "pointer",
-                padding: "0 10px",
-                textAlign: "left",
-              }}
-          >
-            Stream Mode
-          </button>
+          Stream mode
+        </button>
 
-          {/* QUALITY */}
-          <div
-              style={{
-                borderTop: `1px solid ${C.line}`,
-                paddingTop: 8,
-              }}
-          >
-            <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-            >
-            <span
-                style={{
-                  fontSize: 10,
-                  letterSpacing: 1.5,
-                  color: C.t2,
-                  fontWeight: 600,
-                }}
-            >
-              QUALITY
-            </span>
-
-              <button
-                  onClick={() => setQOpen((v) => !v)}
-                  style={{
-                    border: "none",
-                    height: 26,
-                    padding: "0 10px",
-                    borderRadius: 12,
-                    background: C.raised,
-                    color: C.t1,
-                    fontSize: 11,
-                    cursor: "pointer",
-                  }}
-              >
-                Configure
-              </button>
-            </div>
-          </div>
-
-          {/* STREAM */}
-          <div
-              style={{
-                borderTop: `1px solid ${C.line}`,
-                paddingTop: 8,
-              }}
-          >
-            <div style={{ marginBottom: 8 }}>
-            <span
-                style={{
-                  fontSize: 10,
-                  letterSpacing: 1.5,
-                  color: C.t2,
-                  fontWeight: 600,
-                }}
-            >
-              STREAM
-            </span>
-            </div>
-
-            <div style={{ display: "flex", gap: 6 }}>
-              <button
-                  onClick={onStartStream}
-                  style={{
-                    flex: 1,
-                    height: 34,
-                    border: "none",
-                    borderRadius: 12,
-                    background: "rgba(18,90,58,0.75)",
-                    color: "#63ffa7",
-                    fontSize: 13,
-                    cursor: "pointer",
-                  }}
-              >
-                ON
-              </button>
-
-              <button
-                  onClick={onStopStream}
-                  style={{
-                    flex: 1,
-                    height: 34,
-                    border: "none",
-                    borderRadius: 12,
-                    background: "rgba(92,32,45,0.76)",
-                    color: "#ff7b90",
-                    fontSize: 13,
-                    cursor: "pointer",
-                  }}
-              >
-                OFF
-              </button>
-            </div>
-          </div>
-
-          {/* RECORD */}
-          <div
-              style={{
-                borderTop: `1px solid ${C.line}`,
-                paddingTop: 8,
-              }}
-          >
-            <div style={{ marginBottom: 8 }}>
-            <span
-                style={{
-                  fontSize: 10,
-                  letterSpacing: 1.5,
-                  color: C.t2,
-                  fontWeight: 600,
-                }}
-            >
-              RECORD
-            </span>
-            </div>
-
+        {/* Quality */}
+        <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 7 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <PanelLabel>Quality</PanelLabel>
             <button
-                onClick={onStartRecord}
-                disabled={isRecording}
-                style={{
-                  width: "100%",
-                  height: 34,
-                  border: "none",
-                  borderRadius: 12,
-                  background: C.raised,
-                  color: C.t0,
-                  fontSize: 12,
-                  cursor: "pointer",
-                  opacity: isRecording ? 0.7 : 1,
-                }}
+              onClick={() => setQOpen((v) => !v)}
+              style={{
+                ...btnSx,
+                border: `1px solid ${C.line}`,
+                height: 22,
+                padding: "0 9px",
+                borderRadius: 8,
+                background: qOpen ? C.raised : "transparent",
+                color: C.t1,
+                fontSize: 11,
+                cursor: "pointer",
+              }}
             >
-              {isRecording ? "Recording" : "Start"}
+              Configure
             </button>
           </div>
         </div>
 
-        {/* QUALITY PANEL */}
-        {qOpen && (
-            <QPanel
-                cameraRes={cameraRes}
-                onStreamRes={onStreamRes}
-                onRecordRes={onRecordRes}
-                onStreamBitrate={onStreamBitrate}
-                onRecordBitrate={onRecordBitrate}
-                onClose={() => setQOpen(false)}
-            />
-        )}
+        {/* Stream */}
+        <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 7, display: "flex", flexDirection: "column", gap: 6 }}>
+          <PanelLabel>Stream</PanelLabel>
+          <div style={{ display: "flex", gap: 5 }}>
+            <button
+              onClick={onStartStream}
+              style={{
+                ...btnSx,
+                flex: 1,
+                height: 30,
+                border: `1px solid ${C.line}`,
+                borderRadius: 10,
+                background: C.raised,
+                color: C.t0,
+                fontSize: 12,
+                cursor: "pointer",
+              }}
+            >
+              ON
+            </button>
+            <button
+              onClick={onStopStream}
+              style={{
+                ...btnSx,
+                flex: 1,
+                height: 30,
+                border: `1px solid ${C.line}`,
+                borderRadius: 10,
+                background: C.raised,
+                color: C.t1,
+                fontSize: 12,
+                cursor: "pointer",
+              }}
+            >
+              OFF
+            </button>
+          </div>
+        </div>
+
+        {/* Record */}
+        <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 7, display: "flex", flexDirection: "column", gap: 6 }}>
+          <PanelLabel>Record</PanelLabel>
+          <div style={{ display: "flex", gap: 5 }}>
+            <button
+              onClick={onStartRecord}
+              style={{
+                ...btnSx,
+                flex: 1,
+                height: 30,
+                border: `1px solid ${C.line}`,
+                borderRadius: 10,
+                background: C.raised,
+                color: isRecording ? C.t2 : C.t0,
+                fontSize: 12,
+                cursor: isRecording ? "default" : "pointer",
+                opacity: isRecording ? 0.6 : 1,
+              }}
+            >
+              Start
+            </button>
+            <button
+              onClick={onStopRecord}
+              style={{
+                ...btnSx,
+                flex: 1,
+                height: 30,
+                border: `1px solid ${C.line}`,
+                borderRadius: 10,
+                background: C.raised,
+                color: isRecording ? C.t0 : C.t2,
+                fontSize: 12,
+                cursor: isRecording ? "pointer" : "default",
+                opacity: isRecording ? 1 : 0.6,
+              }}
+            >
+              Stop
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Quality panel */}
+      {qOpen && (
+        <QPanel
+          cameraRes={cameraRes}
+          isHighFpsMode={useHighSpeedQuality}
+          onStreamRes={onStreamRes}
+          onRecordRes={onRecordRes}
+          onStreamBitrate={onStreamBitrate}
+          onRecordBitrate={onRecordBitrate}
+          onClose={() => setQOpen(false)}
+        />
+      )}
+    </div>
   );
 }
 
-function AccentBtn({ children, onClick, color }) {
-  const [hov, setHov] = useState(false);
+// ─── Internal helpers ─────────────────────────────────────────────────────────
 
+function PanelLabel({ children }) {
   return (
+    <span
+      style={{
+        fontSize: 10,
+        letterSpacing: 1.4,
+        color: C.t2,
+        fontWeight: 600,
+        textTransform: "uppercase",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function SubtleBtn({ children, onClick }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...btnSx,
+        flex: 1,
+        height: 26,
+        borderRadius: 8,
+        border: `1px solid ${C.line}`,
+        background: hov ? C.raised : "transparent",
+        color: C.t1,
+        fontSize: 11,
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function BitrateRow({ label, value, min, step, onChange, onApply }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <span style={{ fontSize: 11, color: C.t2, fontWeight: 500, width: 42, flexShrink: 0 }}>
+        {label}
+      </span>
+      <input
+        type="number"
+        value={value}
+        min={min}
+        step={step}
+        onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
+        style={{
+          ...inputSx,
+          flex: 1,
+          height: 26,
+          fontSize: 11,
+        }}
+      />
+      <span style={{ fontSize: 10, color: C.t2, flexShrink: 0 }}>kbps</span>
       <button
-          onClick={onClick}
-          style={{
-            ...btnSx,
-            padding: "5px 8px",
-            flexShrink: 0,
-            borderRadius: 12,
-            border: `1px solid ${color}44`,
-            color,
-            background: hov
-                ? C.raised
-                : "transparent",
-            fontSize: 11,
-          }}
-          onMouseEnter={() => setHov(true)}
-          onMouseLeave={() => setHov(false)}
+        onClick={onApply}
+        style={{
+          ...btnSx,
+          height: 26,
+          padding: "0 8px",
+          borderRadius: 8,
+          border: `1px solid ${C.line}`,
+          background: "transparent",
+          color: C.t1,
+          fontSize: 11,
+          cursor: "pointer",
+          flexShrink: 0,
+        }}
       >
-        {children}
+        Apply
       </button>
+    </div>
   );
 }

@@ -14,6 +14,8 @@ export function parseTelemetry(hex) {
     const b = new Uint8Array(46);
     for (let i = 0; i < 46; i++) b[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
     const dv = new DataView(b.buffer);
+    const parsedStatus = hex.length > 92 ? parseInt(hex[92], 16) : NaN;
+    const status = Number.isNaN(parsedStatus) ? null : parsedStatus;
     return {
       batCurrent: dv.getInt16(0, true),
       batLevel:   dv.getUint8(2),
@@ -30,6 +32,10 @@ export function parseTelemetry(hex) {
       accuracy:   dv.getFloat32(34, true),
       speed:      dv.getFloat32(38, true) * 3.6,
       altitude:   dv.getFloat32(42, true),
+      status,
+      tunnel:     status == null ? null : (status & 1) !== 0,
+      streaming:  status == null ? null : (status & 2) !== 0,
+      recording:  status == null ? null : (status & 4) !== 0,
     };
   } catch (e) {
     console.error("[parseTelemetry]", e);

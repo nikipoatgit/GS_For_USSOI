@@ -3,9 +3,11 @@ package ussoi.SessionHandler.Device.PoolRegistry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import ussoi.Utility.Role;
 
@@ -49,7 +51,7 @@ public class StreamRegistry {
 
     public void registerUser(String userId, Channel channel) {
         userChannels.put(userId, channel);
-        System.out.println("[DEBUG] + registerUser " + userId );
+        System.out.println("[DEBUG] + [stream] + registerUser " + userId );
 
         level1Channels.add(channel);
 
@@ -58,8 +60,13 @@ public class StreamRegistry {
         });
     }
 
-    public void broadcastToUsers(Object frame) {
-        level1Channels.writeAndFlush(frame);
+    public void broadcastToUsers(ByteBuf buf) {
+        level1Channels.write(
+                new BinaryWebSocketFrame(
+                        buf.retainedDuplicate()
+                )
+        );
+        level1Channels.flush();
     }
 
     public boolean isDeviceConnected(){
