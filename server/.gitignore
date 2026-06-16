@@ -1,8 +1,17 @@
-# Ignore Gradle project-specific cache directory
-.gradle
+# Gradle / JVM
+.gradle/
+build/
+.kotlin/
 
-# Ignore Gradle build output directory
-build
+# Frontend artifacts under server/web
+web/node_modules/
+web/dist/
+web/dist-ssr/
 
-# Ignore Kotlin plugin data
-.kotlin
+# Logs and crash dumps
+*.log
+hs_err_pid*.log
+replay_pid*.log
+
+# Optional local data
+# app/data/*.db

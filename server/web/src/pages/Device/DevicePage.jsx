@@ -33,6 +33,16 @@ import { AboutOverlay, ToastContainer } from "./AboutOverlay.jsx";
 import { MiniMap }           from "./MiniMap.jsx";
 
 // ─────────────────────────────────────────────────────────────────────────────
+function normalizeStreamMode(rawMode) {
+    const raw = String(rawMode ?? "NONE").toLowerCase();
+    const isHighFps = raw === "hfh264" || raw === "hf_h264" || raw === "hspeed" || raw === "high_speed" || raw === "highspeed";
+
+    if (raw === "webrtc") return { playerMode: "webrtc", highFpsMode: false };
+    if (raw === "h264") return { playerMode: "mse", highFpsMode: false };
+    if (isHighFps) return { playerMode: "mse", highFpsMode: true };
+    return { playerMode: "none", highFpsMode: false };
+}
+
 export default function Devicge() {
     const { DeviceId } = useParams();
 
@@ -93,20 +103,28 @@ export default function Devicge() {
         }));
     }, []);
 
+    const applyTelemetry = useCallback((t) => {
+        setTelemetry(t);
+        clearTimeout(deviceIndicatorTimer.current);
+        setIndicators(prev => ({
+            ...prev,
+            device: true,
+            stream: t.streaming ?? prev.stream,
+            record: t.recording ?? prev.record,
+            tunnel: t.tunnel ?? prev.tunnel,
+        }));
+        deviceIndicatorTimer.current = setTimeout(
+            () => setIndicators(prev => ({ ...prev, device: false })), 6000
+        );
+    }, []);
+
     // ── Incoming message router ────────────────────────────────────────────────
     const handleMessage = useCallback((d) => {
 
         // New compact telemetry: { cmd:"t", d:"HEX" }
         if (d.cmd === "t") {
             const t = parseTelemetry(d.d);
-            if (t) {
-                setTelemetry(t);
-                clearTimeout(deviceIndicatorTimer.current);
-                setIndicators(prev => ({ ...prev, device: true }));
-                deviceIndicatorTimer.current = setTimeout(
-                    () => setIndicators(prev => ({ ...prev, device: false })), 6000
-                );
-            }
+            if (t) applyTelemetry(t);
             return;
         }
 
@@ -116,12 +134,7 @@ export default function Devicge() {
                 // Legacy: { type:"telem", hex:"..." }
                 const t = parseTelemetry(d.hex ?? d.d);
                 if (!t) break;
-                setTelemetry(t);
-                clearTimeout(deviceIndicatorTimer.current);
-                setIndicators(prev => ({ ...prev, device: true }));
-                deviceIndicatorTimer.current = setTimeout(
-                    () => setIndicators(prev => ({ ...prev, device: false })), 6000
-                );
+                applyTelemetry(t);
                 break;
             }
 
@@ -138,22 +151,19 @@ export default function Devicge() {
                     case "get_params": {
                         const p = d.data ?? d.param ?? d.params;
                         if (!p) break;
-                        const raw  = (p.Stream_mode ?? "NONE").toLowerCase();
                         const hfSupported = p.HFSupport === true
                             || String(p.HFSupport).toLowerCase() === "true"
                             || String(p.HFSupport) === "1";
-                        const mode = raw === "webrtc" ? "webrtc"
-                            : (raw === "h264" || raw === "hfh264") ? "mse"
-                                : "none";
-                        setStreamMode(mode);
+                        const mode = normalizeStreamMode(p.Stream_mode);
+                        setStreamMode(mode.playerMode);
                         setClientConfig(prev => ({
                             ...prev,
-                            webrtc: mode === "webrtc",
-                            mse:    mode === "mse",
-                            hfh264: raw  === "hfh264",
+                            webrtc: mode.playerMode === "webrtc",
+                            mse:    mode.playerMode === "mse",
+                            hfh264: mode.highFpsMode,
                             highFpsSupported: hfSupported,
                         }));
-                        if (mode === "none") addLog("warn", "Stream Disabled", "Device in NONE mode");
+                        if (mode.playerMode === "none") addLog("warn", "Stream Disabled", "Device in NONE mode");
                         break;
                     }
 
@@ -201,14 +211,19 @@ export default function Devicge() {
             default:
                 console.log("[WS] unhandled type:", d.type);
         }
-    }, [applyUiState, addLog]);
+    }, [applyTelemetry, applyUiState, addLog]);
+
+    const [videoStats, setVideoStats] = useState({
+        fps: 0,
+        latency: 0,
+    });
 
     // ── Hooks ──────────────────────────────────────────────────────────────────
     const {
         initDecoder: attachVideo,
         feedFrame,
         reset: resetH264Player,
-    } = useH264Player();
+    } = useH264Player(setVideoStats);
 
     const {
         connect: connectControl,
@@ -227,9 +242,9 @@ export default function Devicge() {
         onBinary: feedFrame,
         bootstrapOnOpen: false,
     });
-
+    const hiddenVideoRef = useRef(null);
     const { startOffer, closePc, handleSdp, addIceCandidate } = useWebRTC({
-        iceServers, videoRef, sendCmd, onLog: addLog,
+        hiddenVideoRef, iceServers, videoRef, sendCmd, onLog: addLog,
     });
 
     useEffect(() => {
@@ -270,10 +285,13 @@ export default function Devicge() {
 
     // ── Stream commands ────────────────────────────────────────────────────────
     const startStream = useCallback(async () => {
-        if (streamMode === "webrtc" && !await startOffer()) return;
+        if (isMseStream && DeviceId) {
+            connectStream(DeviceId, "/ws/user/stream");
+        }
         if (isMseStream && videoRef.current) attachVideo(videoRef.current);
         sendCmd({ cmd: "start_stream" });
-    }, [streamMode, isMseStream, startOffer, attachVideo, sendCmd]);
+        if (streamMode === "webrtc") await startOffer();
+    }, [DeviceId, connectStream, streamMode, isMseStream, startOffer, attachVideo, sendCmd]);
 
     const stopStream = useCallback(() => {
         sendCmd({ cmd: "stop_stream" });
@@ -286,6 +304,7 @@ export default function Devicge() {
     }, [sendCmd, streamMode, closePc, disconnectStream, resetH264Player]);
 
     const startRecording = useCallback(() => sendCmd({ cmd: "start_recording" }), [sendCmd]);
+    const stopRecording = useCallback(() => sendCmd({ cmd: "stop_recording" }), [sendCmd]);
 
     const startTunnel = useCallback(() =>
         sendCmd({ cmd: "start_tunnel", tunnelName: tunnelNames[0] ?? "" }), [sendCmd, tunnelNames]);
@@ -325,10 +344,35 @@ export default function Devicge() {
         }
     }, [streamMode, sendCmd]);
 
-    const handleSwitchCamera = useCallback((camId = 0) => {
-        const id = Number.isInteger(camId) ? camId : 0;
-        sendCmd({ cmd: "switch", param: { camId: id } });
-    }, [sendCmd]);
+    const [currentCamId, setCurrentCamId] = useState(0);
+
+    const handleSwitchCamera = useCallback(() => {
+
+        const cameras = cameraRes?.cameras ?? [];
+
+        if (cameras.length === 0) return;
+
+        const currentIndex = cameras.findIndex(
+            c => Number(c.cameraId) === currentCamId
+        );
+
+        const nextIndex =
+            currentIndex === -1
+                ? 0
+                : (currentIndex + 1) % cameras.length;
+
+        const nextCamId = Number(cameras[nextIndex].cameraId);
+
+        setCurrentCamId(nextCamId);
+
+        sendCmd({
+            cmd: "switch",
+            param: {
+                camId: nextCamId
+            }
+        });
+
+    }, [cameraRes, currentCamId, sendCmd]);
 
     const handleFullscreen = useCallback(() => {
         if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
@@ -399,6 +443,7 @@ export default function Devicge() {
                 }}>
                     <div style={{ position: "relative", width: "100%", flex: "0 0 auto" }}>
                         <VideoPlayer
+                            hiddenVideoRef={hiddenVideoRef}
                             videoRef={videoRef} containerRef={containerRef}
                             indicators={indicators} streamMode={streamMode}
                             rotation={rotation} isFlipped={isFlipped}
@@ -407,10 +452,14 @@ export default function Devicge() {
                             onFlip={handleFlip} onRotate={handleRotate}
                             onSwitchCamera={handleSwitchCamera} onFullscreen={handleFullscreen}
                             onSettingsToggle={() => setSettingsOpen(s => !s)}
+                            currentCamId={currentCamId}
+                            videoStats={videoStats}
                         >
                             <SettingsPanel
                                 open={settingsOpen}
                                 cameraRes={cameraRes}
+                                streamMode={streamMode}
+                                highFpsMode={clientConfig.hfh264}
                                 tunnelMode={tunnelMode}
                                 tunnelNames={tunnelNames}
                                 uiState={uiState}
@@ -420,6 +469,7 @@ export default function Devicge() {
                                 onStreamBitrate={setStreamBitrate}
                                 onRecordBitrate={setRecordBitrate}
                                 onStartRecord={startRecording}
+                                onStopRecord={stopRecording}
                                 onStartStream={startStream}
                                 onStopStream={stopStream}
                                 onStartTunnel={startTunnel}

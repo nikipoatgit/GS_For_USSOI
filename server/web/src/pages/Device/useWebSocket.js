@@ -9,17 +9,23 @@ const RECONNECT_MS = 3_000;
 
 let _counter = 0;
 function genCmdId() { return `c${Date.now()}_${++_counter}`; }
+function binaryPreview(ab, max = 16) {
+  return [...new Uint8Array(ab).slice(0, max)]
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join(" ");
+}
 
 export function useWebSocket({
-  onLog,
-  onMessage,
-  onBinary,
-  bootstrapOnOpen = true,
-}) {
+                               onLog,
+                               onMessage,
+                               onBinary,
+                               bootstrapOnOpen = true,
+                             }) {
   const wsRef          = useRef(null);
   const connectRef     = useRef(null);
   const reconnectTimer = useRef(null);
   const deviceIdRef    = useRef(null);
+  const binaryCountRef = useRef(0);
 
   const sendCmd = useCallback((data) => {
     const message = { ...data };
@@ -74,11 +80,14 @@ export function useWebSocket({
 
     ws.onmessage = (e) => {
       if (e.data instanceof ArrayBuffer) {
-        const bytes = new Uint8Array(e.data);
-        console.log("[WS IN][BINARY]", {
-          bytes: bytes.byteLength,
-          preview: Array.from(bytes.slice(0, 24)),
-        });
+        binaryCountRef.current++;
+        if (binaryCountRef.current <= 10 || binaryCountRef.current % 30 === 0) {
+          console.debug("[WS IN binary]", {
+            packet: binaryCountRef.current,
+            bytes: e.data.byteLength,
+            firstBytes: binaryPreview(e.data),
+          });
+        }
         onBinary?.(e.data);
         return;
       }
@@ -86,6 +95,10 @@ export function useWebSocket({
       try { d = JSON.parse(e.data); } catch { return; }
       console.log("[WS IN]", JSON.stringify(d));
       onMessage(d);
+      const status = String(d.status ?? d.data?.status ?? "").toLowerCase();
+      if (d.type === "ack" || (d.type === "response" && (status === "ok" || status === "okay" || status === "success"))) {
+        onLog("success", "Response", `${d.cmd ?? "?"}${status ? ` · ${status}` : ""}`);
+      }
       if (d.type === "nack" || d.type === "error") {
         onLog("error", "NACK", `${d.cmd ?? "?"}: ${d.error ?? "rejected"}`);
       }
