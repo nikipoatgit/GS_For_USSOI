@@ -1,0 +1,12 @@
+# Gradle / JVM
+.gradle/
+build/
+.kotlin/
+
+# Logs and crash dumps
+*.log
+hs_err_pid*.log
+replay_pid*.log
+
+# Optional local data
+# app/data/*.db
