@@ -26,32 +26,32 @@ export function Navbar({ onClientDetails }) {
             }}
         >
             <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-        <span
-            style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: C.t0,
-                letterSpacing: 0.4,
-                userSelect: "none",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-            }}
-        >
-          <span>USSOI</span>
+                <span
+                    style={{
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: C.t0,
+                        letterSpacing: 0.4,
+                        userSelect: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                    }}
+                >
+                    <span>USSOI</span>
 
-          <span
-              style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: 999,
-                  background: C.blue,
-                  boxShadow: `0 0 10px ${C.blue}`,
-              }}
-          />
+                    <span
+                        style={{
+                            width: 5,
+                            height: 5,
+                            borderRadius: 999,
+                            background: C.blue,
+                            boxShadow: `0 0 10px ${C.blue}`,
+                        }}
+                    />
 
-          <span style={{ opacity: 0.9 }}>GCS</span>
-        </span>
+                    <span style={{ opacity: 0.9 }}>GCS</span>
+                </span>
 
                 <GhLink />
             </div>
@@ -68,6 +68,7 @@ function GhLink() {
     const [hov, setHov] = useState(false);
 
     return (
+
         <a
             href="https://github.com/nikipoatgit"
             target="_blank"
@@ -78,18 +79,35 @@ function GhLink() {
                 color: hov ? C.t1 : C.t3,
                 textDecoration: "none",
                 transition: "all 0.18s ease",
-                display: "flex",
+                display: "inline-flex",
                 alignItems: "center",
-                gap: 6,
+                justifyContent: "flex-start",
+                gap: 8,
                 opacity: hov ? 1 : 0.8,
                 transform: hov ? "translateY(-1px)" : "translateY(0)",
             }}
             onMouseEnter={() => setHov(true)}
             onMouseLeave={() => setHov(false)}
         >
-            <span style={{ fontSize: 11 }}>●</span>
-            github/nikipoatgit
+            <img
+                src="/git_profile_square.png" // Correct path format for files sitting inside your public folder
+                alt="GitHub nikipo at git logo"
+                style={{
+                    width: 16,            // Increased size slightly so the picture inside is legible
+                    height: 16,
+                    padding: "2px",       // Balanced padding for a cleaner circle border ring
+                    background: hov ? `${C.line}66` : `${C.line}22`,
+                    borderRadius: "50%",  // This makes the square image cut into a perfect circle
+                    display: "block",
+                    objectFit: "cover",   // CRITICAL: Prevents your image from squishing or warping inside the circle
+                    transition: "all 0.18s ease",
+                    // Completely removed the 'filter' layout line so your actual image details display properly!
+                }}
+            />
+            <span>github/nikipoatgit</span>
         </a>
+
+
     );
 }
 

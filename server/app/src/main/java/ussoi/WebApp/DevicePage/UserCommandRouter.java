@@ -35,7 +35,7 @@ public class UserCommandRouter {
     private static final Set<Role> PRIVILEGED_ROLES = EnumSet.of(Role.ADMIN, Role.OPERATOR);
 
     // Commands  to ADMIN / OPERATOR only.
-    private static final String[] PRIVILEGED_COMMANDS = { START_STREAM, STOP_STREAM, START_RECORDING, STOP_RECORDING, START_TUNNEL, STOP_TUNNEL, SWITCH, SET_PARAMS, SET_STREAM_RES, SET_RECORD_RES, WEBRTC_SDP };
+    private static final String[] PRIVILEGED_COMMANDS = {DEVICE_IDENTITY,DEVICE_INFO,START_STREAM, STOP_STREAM, START_RECORDING, STOP_RECORDING, START_TUNNEL, STOP_TUNNEL, SWITCH, SET_PARAMS, SET_STREAM_RES, SET_RECORD_RES, WEBRTC_SDP };
 
     // public Commands
     private static final String[] PUBLIC_COMMANDS = { PLAY, PAUSE, ROTATE, MUTE, FLIP, WEBRTC_SDP, WEBRTC_ICE };
@@ -58,7 +58,7 @@ public class UserCommandRouter {
 
         CommandHandler handler = commandMap.get(cmd);
         if (handler == null) {
-            deviceSession.sendError(cmd,cmdId,"unknown_or_unauthorized_command");
+            deviceSession.sendError(cmd,cmdId,"SERVER : unknown_or_unauthorized_command");
             return;
         }
 

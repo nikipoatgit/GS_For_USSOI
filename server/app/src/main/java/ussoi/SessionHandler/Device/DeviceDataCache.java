@@ -25,4 +25,5 @@ public class DeviceDataCache {
     public JsonNode tunnels;
     // camera resolution
     public JsonNode resolution;
+    public JsonNode identity;
 }

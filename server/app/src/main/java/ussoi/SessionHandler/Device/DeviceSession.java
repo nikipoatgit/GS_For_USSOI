@@ -58,6 +58,7 @@ public class DeviceSession {
         commandMap.put(GET_TUNNELS, this::processGetTunnels);
         commandMap.put(GET_RES, this::processGetRes);
         commandMap.put(GET_PARAMS, this::processGetParams);
+        commandMap.put(DEVICE_IDENTITY, this::processDeviceIdentity);
 
 
     }
@@ -78,6 +79,9 @@ public class DeviceSession {
         deviceDataCache.params = jsonNode;
     }
 
+    void  processDeviceIdentity(JsonNode jsonNode){
+        deviceDataCache.identity = jsonNode;
+    }
 
     public boolean deviceStatus(){
         return controlWSRegistry.isDeviceConnected();

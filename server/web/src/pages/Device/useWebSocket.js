@@ -11,20 +11,35 @@ let _counter = 0;
 function genCmdId() { return `c${Date.now()}_${++_counter}`; }
 function binaryPreview(ab, max = 16) {
   return [...new Uint8Array(ab).slice(0, max)]
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join(" ");
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join(" ");
 }
 
+
 export function useWebSocket({
-                               onLog,
-                               onMessage,
-                               onBinary,
-                               bootstrapOnOpen = true,
-                             }) {
-  const wsRef          = useRef(null);
-  const connectRef     = useRef(null);
+  onLog,
+  onMessage,
+  onBinary,
+  bootstrapOnOpen = true,
+  enableLogging = true,
+}) {
+
+  const log = (...args) => {
+    if (enableLogging) {
+      console.log(...args);
+    }
+  };
+
+  const debug = (...args) => {
+    if (enableLogging) {
+      console.debug(...args);
+    }
+  };
+
+  const wsRef = useRef(null);
+  const connectRef = useRef(null);
   const reconnectTimer = useRef(null);
-  const deviceIdRef    = useRef(null);
+  const deviceIdRef = useRef(null);
   const binaryCountRef = useRef(0);
 
   const sendCmd = useCallback((data) => {
@@ -38,7 +53,7 @@ export function useWebSocket({
       onLog("error", "WebSocket", `Cannot serialize ${message.cmd ?? "message"}: ${err.message}`);
       return;
     }
-    console.log("[WS OUT]", payload);
+    log("[WS OUT]", payload);
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(payload);
@@ -49,9 +64,9 @@ export function useWebSocket({
 
   const connect = useCallback((deviceId, path = "/ws/user") => {
     if (deviceId) deviceIdRef.current = deviceId;
-    const id    = deviceIdRef.current;
+    const id = deviceIdRef.current;
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
-    const url   = `${proto}://${window.location.host}${path}?deviceId=${id}`;
+    const url = `${proto}://${window.location.host}${path}?deviceId=${id}`;
 
     if (wsRef.current) {
       const old = wsRef.current;
@@ -59,7 +74,7 @@ export function useWebSocket({
       old.close();
     }
 
-    console.log("[WS] connecting →", url);
+    log("[WS] connecting →", url);
     const ws = new WebSocket(url);
     ws.binaryType = "arraybuffer";
     wsRef.current = ws;
@@ -72,8 +87,9 @@ export function useWebSocket({
         // Delay initial queries — give device handshake time to settle
         setTimeout(() => {
           sendCmd({ cmd: "get_tunnels" });
-          sendCmd({ cmd: "get_params"  });
-          sendCmd({ cmd: "get_res"     });
+          sendCmd({ cmd: "get_params" });
+          sendCmd({ cmd: "get_res" });
+          sendCmd({ cmd: "get_identity" });
         }, 2000);
       }
     };
@@ -82,7 +98,7 @@ export function useWebSocket({
       if (e.data instanceof ArrayBuffer) {
         binaryCountRef.current++;
         if (binaryCountRef.current <= 10 || binaryCountRef.current % 30 === 0) {
-          console.debug("[WS IN binary]", {
+          debug("[WS IN binary]", {
             packet: binaryCountRef.current,
             bytes: e.data.byteLength,
             firstBytes: binaryPreview(e.data),
@@ -93,7 +109,7 @@ export function useWebSocket({
       }
       let d;
       try { d = JSON.parse(e.data); } catch { return; }
-      console.log("[WS IN]", JSON.stringify(d));
+      log("[WS IN]", JSON.stringify(d));
       onMessage(d);
       const status = String(d.status ?? d.data?.status ?? "").toLowerCase();
       if (d.type === "ack" || (d.type === "response" && (status === "ok" || status === "okay" || status === "success"))) {

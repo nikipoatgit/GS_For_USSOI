@@ -83,8 +83,7 @@ public final class UssoiStrings {
     public static final String GET_RES      = "get_res";
     public static final String GET_PARAMS   = "get_params";
 
-    public static final String TELEMETRY   = "t";
-
+    public static final String TELEMETRY   = "telem";
 
     // Status Values
     public static final String STATUS_OK    = "ok";
@@ -95,5 +94,9 @@ public final class UssoiStrings {
     public static final String STREAM_H264   = "H264";
     public static final String STREAM_HFH264 = "HFH264";
     public static final String STREAM_NONE   = "NONE";
+
+
+    public static final String DEVICE_IDENTITY   = "get_identity";
+    public static final String DEVICE_INFO   = "get_info";
 
 }

@@ -9,6 +9,7 @@ import {
 } from "../../shared/ui.jsx";
 
 const QUALITY_STORAGE_KEY = "gcs.ussoi.device.quality.v1";
+const HIGH_FPS_OPTIONS = [2,5,10,15,20];
 
 const DEFAULT_QUALITY_STATE = {
   normal: {
@@ -85,10 +86,6 @@ function isHighSpeedQualityMode(streamMode, highFpsMode) {
 }
 
 // ─── PresetScroll ─────────────────────────────────────────────────────────────
-// Horizontal preset strip with:
-//   • mouse-wheel scrolling (wheel event, no edge-hover)
-//   • ‹ › arrow buttons for keyboard/touch navigation
-
 function PresetScroll({ resolutions, w, h, onPick }) {
   const scrollRef = useRef(null);
   const STEP = 120;
@@ -129,7 +126,6 @@ function PresetScroll({ resolutions, w, h, onPick }) {
   return (
     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
       <button style={arrowSx} onClick={() => scroll(-STEP)} aria-label="Scroll presets left">‹</button>
-
       <div
         ref={scrollRef}
         style={{
@@ -165,14 +161,12 @@ function PresetScroll({ resolutions, w, h, onPick }) {
           );
         })}
       </div>
-
       <button style={arrowSx} onClick={() => scroll(STEP)} aria-label="Scroll presets right">›</button>
     </div>
   );
 }
 
 // ─── QPanel ──────────────────────────────────────────────────────────────────
-
 function QPanel({
   cameraRes,
   isHighFpsMode,
@@ -181,6 +175,7 @@ function QPanel({
   onStreamBitrate,
   onRecordBitrate,
   onClose,
+  addLog
 }) {
   const cameras =
     cameraRes?.cameras ??
@@ -197,10 +192,13 @@ function QPanel({
   const [rKBps, setRKBps] = useState(DEFAULT_QUALITY_STATE.normal.recordKbps);
 
   const currentCamera = cameras[camIdx] ?? null;
-  const allResolutions = isHighFpsMode
-    ? (currentCamera?.high_speed ?? [])
-    : (currentCamera?.normal ?? []);
+  const allResolutions = isHighFpsMode ? (currentCamera?.high_speed ?? []) : (currentCamera?.normal ?? []);
   const resolutions = allResolutions;
+
+  // Merge standard camera FPS list with fixed High FPS options into one row if in High FPS Mode
+  const combinedFpsList = isHighFpsMode
+    ? [...new Set([...fpsList, ...HIGH_FPS_OPTIONS])].sort((a, b) => a - b)
+    : fpsList;
 
   const commitBucket = (updater) => {
     const nextState = cloneQualityState();
@@ -210,7 +208,12 @@ function QPanel({
 
   const applyPreset = (res, nextFps, streamKbps = sKBps, recordKbps = rKBps, nextCamIdx = camIdx) => {
     const fpsOptions = normalizeFpsList(res);
-    const resolvedFps = fpsOptions.includes(nextFps) ? nextFps : fpsOptions[fpsOptions.length - 1];
+    // Include high FPS options during resolution verification if in high FPS mode
+    const allowedFpsOptions = isHighFpsMode
+      ? [...new Set([...fpsOptions, ...HIGH_FPS_OPTIONS])]
+      : fpsOptions;
+
+    const resolvedFps = allowedFpsOptions.includes(nextFps) ? nextFps : fpsOptions[fpsOptions.length - 1];
 
     setCamIdx(nextCamIdx);
     setW(res.width);
@@ -238,14 +241,10 @@ function QPanel({
     const saved = QUALITY_STATE_CACHE[qualityBucket] ?? DEFAULT_QUALITY_STATE[qualityBucket];
     const nextCamIdx = clampIndex(saved.camIdx, cameras.length - 1);
 
-    const targetList = isHighFpsMode
-      ? (cameras[nextCamIdx]?.high_speed ?? [])
-      : (cameras[nextCamIdx]?.normal ?? []);
+    const targetList = isHighFpsMode ? (cameras[nextCamIdx]?.high_speed ?? []) : (cameras[nextCamIdx]?.normal ?? []);
     if (targetList.length === 0) return;
 
-    const target =
-      targetList.find((res) => res.width === saved.w && res.height === saved.h) ?? targetList[0];
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    const target = targetList.find((res) => res.width === saved.w && res.height === saved.h) ?? targetList[0];
     applyPreset(target, saved.fps, saved.streamKbps, saved.recordKbps, nextCamIdx);
   }, [cameraRes, camIdx, isHighFpsMode, isLoadingPresets, qualityBucket]);
 
@@ -253,11 +252,7 @@ function QPanel({
 
   const pickCamera = (idx) => {
     const nextCamIdx = clampIndex(idx, cameras.length - 1);
-    const first = (
-      isHighFpsMode
-        ? (cameras[nextCamIdx]?.high_speed ?? [])
-        : (cameras[nextCamIdx]?.normal ?? [])
-    )[0];
+    const first = (isHighFpsMode ? (cameras[nextCamIdx]?.high_speed ?? []) : (cameras[nextCamIdx]?.normal ?? []))[0];
     if (first) applyPreset(first, fps, sKBps, rKBps, nextCamIdx);
   };
 
@@ -294,7 +289,6 @@ function QPanel({
       </div>
 
       <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-
         {/* Camera tabs */}
         {cameras.length > 1 && (
           <div style={{ display: "flex", gap: 4 }}>
@@ -318,41 +312,68 @@ function QPanel({
           )}
         </div>
 
-        {/* FPS */}
+        {/* FPS Selector Row */}
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           <SLabelLocal>FPS</SLabelLocal>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {fpsList.map((f) => (
-              <ChipLocal
-                key={f}
-                active={fps === f}
-                onClick={() => {
-                  setFps(f);
-                  commitBucket((s) => ({ ...s, fps: f }));
-                }}
-              >
-                {f}
-              </ChipLocal>
-            ))}
+            {combinedFpsList.map((f) => {
+              const active = fps === f;
+              const isRestrictedHighFps = !fpsList.includes(f);
+
+              return (
+                <div
+                  key={f}
+                  style={{
+                    position: "relative",
+                    display: "inline-flex",
+                  }}
+                >
+                  <ChipLocal
+                    active={active}
+                    onClick={() => {
+                      setFps(f);
+                      commitBucket((s) => ({ ...s, fps: f }));
+                    }}
+                  >
+                    {f}
+                  </ChipLocal>
+
+                  {isRestrictedHighFps && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: -2,
+                        right: -2,
+                        width: 7,
+                        height: 7,
+                        borderRadius: "50%",
+                        background: "#4d4d4d",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Stream / Record apply */}
-        <div style={{ display: "flex", gap: 5 }}>
-          <SubtleBtn
-            onClick={() => {
-              onStreamRes(w, h, fps);
-              commitBucket((s) => ({ ...s, w, h, fps }));
-            }}
-          >
+        {/* Unified Application Action Buttons */}
+        <div style={{ display: "flex", gap: 5, marginTop: 5 }}>
+          <SubtleBtn onClick={() => { onStreamRes(w, h, fps); }}>
             Apply stream
           </SubtleBtn>
-          <SubtleBtn
-            onClick={() => {
-              onRecordRes(w, h, fps);
-              commitBucket((s) => ({ ...s, w, h, fps }));
-            }}
-          >
+
+          <SubtleBtn onClick={() => {
+            // Block execution if high FPS stream-only variants are selected
+            if (isHighFpsMode && !fpsList.includes(fps)) {
+              if (typeof addLog === "function") {
+                addLog("warn", "Record Error", `The selected FPS (${fps}) is not natively supported for recording.`);
+              }
+              return;
+            }
+            onRecordRes(w, h, fps);
+          }}>
             Apply record
           </SubtleBtn>
         </div>
@@ -360,7 +381,6 @@ function QPanel({
         {/* Bitrate */}
         <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 8, display: "flex", flexDirection: "column", gap: 7 }}>
           <SLabelLocal>Bitrate</SLabelLocal>
-
           <BitrateRow
             label="Stream"
             value={sKBps}
@@ -375,7 +395,6 @@ function QPanel({
               commitBucket((s) => ({ ...s, streamKbps: sKBps }));
             }}
           />
-
           <BitrateRow
             label="Record"
             value={rKBps}
@@ -397,7 +416,6 @@ function QPanel({
 }
 
 // ─── SettingsPanel ────────────────────────────────────────────────────────────
-
 export function SettingsPanel({
   open,
   cameraRes,
@@ -413,6 +431,7 @@ export function SettingsPanel({
   onStopRecord,
   onStartStream,
   onStopStream,
+  addLog,
 }) {
   const [qOpen, setQOpen] = useState(false);
 
@@ -584,6 +603,7 @@ export function SettingsPanel({
           onStreamBitrate={onStreamBitrate}
           onRecordBitrate={onRecordBitrate}
           onClose={() => setQOpen(false)}
+          addLog={addLog}
         />
       )}
     </div>
@@ -591,18 +611,9 @@ export function SettingsPanel({
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
-
 function PanelLabel({ children }) {
   return (
-    <span
-      style={{
-        fontSize: 10,
-        letterSpacing: 1.4,
-        color: C.t2,
-        fontWeight: 600,
-        textTransform: "uppercase",
-      }}
-    >
+    <span style={{ fontSize: 10, letterSpacing: 1.4, color: C.t2, fontWeight: 600, textTransform: "uppercase" }}>
       {children}
     </span>
   );
@@ -644,12 +655,7 @@ function BitrateRow({ label, value, min, step, onChange, onApply }) {
         min={min}
         step={step}
         onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
-        style={{
-          ...inputSx,
-          flex: 1,
-          height: 26,
-          fontSize: 11,
-        }}
+        style={{ ...inputSx, flex: 1, height: 26, fontSize: 11 }}
       />
       <span style={{ fontSize: 10, color: C.t2, flexShrink: 0 }}>kbps</span>
       <button

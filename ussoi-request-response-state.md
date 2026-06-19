@@ -155,6 +155,23 @@ Stream_mode : WEBRTC | H264 | HFH264 |NONE
 {"type":"error","cmd":"switch","cmdId":"u1","error":"Invalid"}
 ```
 
+
+#### Audio
+```json 
+{"type":"request","cmd":"mute","cmdId":"u1","param":{"state":true}}
+{"type":"response","cmd":"mute","cmdId":"u1","status":"ok"}
+{"type":"error","cmd":"mute","cmdId":"u1","error":"Invalid"}
+```
+
+
+#### Play/Pause
+```json 
+{"type":"request","cmd":"paly","cmdId":"u1"}
+{"type":"response","cmd":"play","cmdId":"u1","status":"ok"}
+{"type":"error","cmd":"play","cmdId":"u1","error":"Invalid"}
+```
+
+
 #### webrtc revice/send sdp 
 ```json 
 {"type":"request","cmd":"webrtc_sdp","cmdId":"u1","param":{"sdp":{"type":"offer","sdp":"v=0..."}}}
@@ -167,6 +184,27 @@ Stream_mode : WEBRTC | H264 | HFH264 |NONE
 {"type":"request","cmd":"webrtc_ice","cmdId":"u2","param":{"candidate":{"candidate":"candidate:...","sdpMid":"0","sdpMLineIndex":0}}}
 {"type":"response","cmd":"webrtc_ice","cmdId":"u2","data":{"candidate":{"candidate":"candidate:...","sdpMid":"0","sdpMLineIndex":0}}}
 {"type":"error","cmd":"webrtc_ice","cmdId":"u1","error":"Invalid ICE"}
+```
+
+#### webrtc revice/send ice 
+```json 
+{"type":"request","cmd":"webrtc_ice","cmdId":"u2","param":{"candidate":{"candidate":"candidate:...","sdpMid":"0","sdpMLineIndex":0}}}
+{"type":"response","cmd":"webrtc_ice","cmdId":"u2","data":{"candidate":{"candidate":"candidate:...","sdpMid":"0","sdpMLineIndex":0}}}
+{"type":"error","cmd":"webrtc_ice","cmdId":"u1","error":"Invalid ICE"}
+```
+
+#### DeviceIdentity
+```json 
+{"type":"request","cmd":"get_identity","cmdId":"u1"}
+{"type":"response","cmd":"get_identity","cmdId":"u1","data":{}}
+{"type":"error","cmd":"get_identity","cmdId":"u1","error":"Invalid"}
+```
+
+#### DeviceInfo
+```json 
+{"type":"request","cmd":"get_info","cmdId":"u1"}
+{"type":"response","cmd":"get_info","cmdId":"u1","data":{}}
+{"type":"error","cmd":"get_info","cmdId":"u1","error":"Invalid"}
 ```
 
 WebSocket APIs 

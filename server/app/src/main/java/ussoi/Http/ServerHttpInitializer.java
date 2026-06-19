@@ -28,7 +28,7 @@ public class ServerHttpInitializer extends ChannelInitializer<Channel> {
                         "/ws",          // base websocket path
                         null,           // subprotocols
                         true,           // checkStartsWith → allow /ws/*
-                        65536,          // max frame payload length
+                        8 * 1024 * 1024, // max frame payload length 8 MB changing this mat throttle stream
                         true,           // allow extensions
                         true,           // allow mask mismatch
                         true           // don't forward pong frames DownStream

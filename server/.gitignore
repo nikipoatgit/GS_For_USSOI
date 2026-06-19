@@ -3,11 +3,6 @@
 build/
 .kotlin/
 
-# Frontend artifacts under server/web
-web/node_modules/
-web/dist/
-web/dist-ssr/
-
 # Logs and crash dumps
 *.log
 hs_err_pid*.log
