@@ -24,6 +24,7 @@ import { ClientConfigOverlay } from "./ClientConfigOverlay.jsx";
 
 // features / overlays
 import { Navbar } from "./Navbar.jsx";
+import TunnelsOverlay from "./TunnelsOverlay.jsx";
 import { LogPanel, MAX_LOGS } from "./LogPanel.jsx";
 import { AboutOverlay, ToastContainer } from "./AboutOverlay.jsx";
 
@@ -59,11 +60,12 @@ export default function Device() {
 
     // ── Stream / device config ─────────────────────────────────────────────────
     const [clientConfig, setClientConfig] = useState({ webrtc: true, mse: false, hfh264: false, highFpsSupported: false });
-    const [streamMode, setStreamMode] = useState("webrtc");   
+    const [streamMode, setStreamMode] = useState("webrtc");
     const [tunnelMode, setTunnelMode] = useState(null);
     const [tunnelNames, setTunnelNames] = useState([]);
+    const [tunnelsData, setTunnelsData] = useState(null); // <-- NEW: Tracks mapped name -> running state object
     const [deviceInfo, setDeviceInfo] = useState(null);
-    const [deviceInfoExtended, setDeviceInfoExtended] = useState(null); // <-- FIXED: Added missing state hook variable
+    const [deviceInfoExtended, setDeviceInfoExtended] = useState(null); 
     const [cameraRes, setCameraRes] = useState(null);
 
     // ── Video playback state ───────────────────────────────────────────────────
@@ -73,8 +75,8 @@ export default function Device() {
     const [rotation, setRotation] = useState(0);
 
     // ── Refs ───────────────────────────────────────────────────────────────────
-    const videoRef = useRef(null);   // <video> element, used for webrtc mode
-    const canvasRef = useRef(null);  // <canvas> element, used for mse/h264 mode (WebCodecs)
+    const videoRef = useRef(null);   
+    const canvasRef = useRef(null);  
     const containerRef = useRef(null);
     const [iceServers, setIceServers] = useState([...DEFAULT_STUN]);
     const deviceIndicatorTimer = useRef(null);
@@ -82,6 +84,8 @@ export default function Device() {
 
     // ── Video Stats State ──────────────────────────────────────────────────────
     const [videoStats, setVideoStats] = useState({ fps: 0, latency: 0 });
+
+    const [tunnelsOpen, setTunnelsOpen] = useState(false);
 
     // ── Hooks instantiation ────────────────────────────────────────────────────
     const addLog = useCallback((type, message, details = "") => {
@@ -155,12 +159,22 @@ export default function Device() {
                         break;
                     }
                     case "get_tunnels": {
-                        const list = d.data?.tunnels ?? d.tunnels ?? [];
+                        // Handled dictionary response format safely
+                        const dataObj = d.data ?? {};
+                        setTunnelsData(dataObj);
+                        
+                        const list = Object.keys(dataObj);
                         setTunnelNames(list);
                         if (list.length > 0) {
                             const n = list[0].toLowerCase();
                             setTunnelMode(n.includes("bt") ? "bt" : n.includes("usb") ? "usb" : n);
                         }
+                        break;
+                    }
+                    case "start_tunnel":
+                    case "stop_tunnel": {
+                        // Trigger immediate refresh after action confirmations are received
+                        sendCmd({ cmd: "get_tunnels" });
                         break;
                     }
                     case "get_identity": {
@@ -175,7 +189,7 @@ export default function Device() {
                     }
                     case "get_info": {
                         if (d.data) {
-                            setDeviceInfoExtended(d.data); 
+                            setDeviceInfoExtended(d.data);
                         }
                         break;
                     }
@@ -210,19 +224,27 @@ export default function Device() {
     const { initDecoder: attachH264, feedFrame: feedH264, reset: resetH264 } = useH264Player(setVideoStats);
     const { initDecoder: attachJpeg, feedFrame: feedJpeg, reset: resetJpeg } = useJpegPlayer(setVideoStats);
 
-    // hfh264 mode streams JPEG snapshots, not H264 NALs (see HFH264Media.java) —
-    // route to the matching player. Everything downstream (attachVideo,
-    // feedFrame, resetH264Player) keeps its old name so no other call site
-    // in this file needs to change.
     const isHighFps = clientConfig.hfh264;
     const attachVideo = isHighFps ? attachJpeg : attachH264;
     const feedFrame = isHighFps ? feedJpeg : feedH264;
     const resetH264Player = useCallback(() => { resetH264(); resetJpeg(); }, [resetH264, resetJpeg]);
     const { connect: connectControl, disconnect: disconnectControl, sendCmd } = useWebSocket({ onLog: addLog, onMessage: handleMessage });
-    
-    // ── FIXED: fetchInfo declared down here so sendCmd dependency is fully initialized
+
     const fetchInfo = useCallback(() => {
         sendCmd({ cmd: "get_info" });
+    }, [sendCmd]);
+
+    // ── NEW: Scoped centralized commands bound cleanly to individual tunnel parameters ──
+    const fetchTunnels = useCallback(() => {
+        sendCmd({ cmd: "get_tunnels" });
+    }, [sendCmd]);
+
+    const startTunnelByName = useCallback((name) => {
+        sendCmd({ cmd: "start_tunnel", param: { name } });
+    }, [sendCmd]);
+
+    const stopTunnelByName = useCallback((name) => {
+        sendCmd({ cmd: "stop_tunnel", param: { name } });
     }, [sendCmd]);
 
     const handleStreamMessage = useCallback(() => { }, []);
@@ -385,7 +407,20 @@ export default function Device() {
             <MiniMap lat={telemetry?.lat} lon={telemetry?.lon} accuracy={telemetry?.accuracy}
                 visible={mapVisible} onToggle={() => setMapVisible(v => !v)} />
 
-            <Navbar onClientDetails={() => setAboutOpen(true)} />
+            <Navbar
+                onClientDetails={() => setAboutOpen(true)}
+                onTunnels={() => setTunnelsOpen(true)}
+            />
+
+            {/* ── CENTRALIZED TUNNELS MOUNT PIPELINE ── */}
+            <TunnelsOverlay 
+                isOpen={tunnelsOpen} 
+                onClose={() => setTunnelsOpen(false)} 
+                tunnels={tunnelsData}
+                onFetchTunnels={fetchTunnels}
+                onStartTunnel={startTunnelByName}
+                onStopTunnel={stopTunnelByName}
+            />
 
             <div style={{ display: "flex", height: "calc(100vh - 54px)", overflow: "hidden" }}>
                 <main style={{

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { C, FONT } from "../../shared/theme.js";
 
-export function Navbar({ onClientDetails }) {
+export function Navbar({ onClientDetails, onTunnels }) {
     return (
         <nav
             style={{
@@ -58,6 +58,7 @@ export function Navbar({ onClientDetails }) {
 
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <NavBtn onClick={onClientDetails}>Client Details</NavBtn>
+                <NavBtn onClick={onTunnels}>Tunnels</NavBtn>
                 <NavBtn>Logout</NavBtn>
             </div>
         </nav>

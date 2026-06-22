@@ -3,7 +3,7 @@
 // UI truth comes exclusively from server-pushed ui_state messages.
 // cmdId is stamped here — server uses it to route ACK/NACK back.
 
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 
 const RECONNECT_MS = 3_000;
 
@@ -41,6 +41,7 @@ export function useWebSocket({
   const reconnectTimer = useRef(null);
   const deviceIdRef = useRef(null);
   const binaryCountRef = useRef(0);
+  const [socket, setSocket] = useState(null); // mirrors wsRef.current so consumers (e.g. TunnelsOverlay) can use the live WebSocket
 
   const sendCmd = useCallback((data) => {
     const message = { ...data };
@@ -78,6 +79,7 @@ export function useWebSocket({
     const ws = new WebSocket(url);
     ws.binaryType = "arraybuffer";
     wsRef.current = ws;
+    setSocket(ws);
 
     ws.onopen = () => {
       onLog("info", "WebSocket", `connected · ${url} · ${new Date().toLocaleTimeString()}`);
@@ -148,8 +150,9 @@ export function useWebSocket({
       ws.onopen = ws.onmessage = ws.onclose = ws.onerror = null;
       ws.close();
       wsRef.current = null;
+      setSocket(null);
     }
   }, []);
 
-  return { connect, disconnect, sendCmd };
+  return { connect, disconnect, sendCmd, socket };
 }
