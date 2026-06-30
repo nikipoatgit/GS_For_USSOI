@@ -136,9 +136,7 @@ export default function Device() {
                 applyUiState(d.payload);
                 break;
             case "request":
-            case "response":{
-                addLog("info", d.cmd,  d.status);
-            }
+            case "response":
             case "ack": {
                 const param = d.param ?? d.params ?? d.data;
                 switch (d.cmd) {
@@ -173,6 +171,7 @@ export default function Device() {
                         }
                         break;
                     }
+
                     case "start_tunnel":
                     case "stop_tunnel": {
                         // Trigger immediate refresh after action confirmations are received
