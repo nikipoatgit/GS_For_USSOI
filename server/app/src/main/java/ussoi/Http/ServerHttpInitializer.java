@@ -14,6 +14,10 @@ import java.nio.file.Path;
 
 public class ServerHttpInitializer extends ChannelInitializer<Channel> {
 
+    Path root = Path.of("..", "web", "dist")
+            .toAbsolutePath()
+            .normalize();
+
     @Override
     protected void initChannel(Channel ch) {
 
@@ -37,7 +41,8 @@ public class ServerHttpInitializer extends ChannelInitializer<Channel> {
         p.addLast(new WebSocketAuthHandler());
         p.addLast("webSocketRouter", new WebSocketRouter());
 
-        Path root = Path.of("/home/nikipo/user/WEB/GCS_For_USSOI/server/web/dist");
+
+
         p.addLast(new StaticFileHandler(root));
     }
 }
