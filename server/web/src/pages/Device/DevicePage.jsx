@@ -136,7 +136,9 @@ export default function Device() {
                 applyUiState(d.payload);
                 break;
             case "request":
-            case "response":
+            case "response":{
+                addLog("info", d.cmd,  d.status);
+            }
             case "ack": {
                 const param = d.param ?? d.params ?? d.data;
                 switch (d.cmd) {

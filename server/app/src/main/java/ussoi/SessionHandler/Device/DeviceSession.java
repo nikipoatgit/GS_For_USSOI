@@ -7,15 +7,22 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import ussoi.SessionHandler.Device.PoolRegistry.DataRegistry;
+import ussoi.Storage.DB.Database;
 import ussoi.Utility.Role;
 import ussoi.WebApp.DevicePage.UserCommandRouter;
 import ussoi.SessionHandler.Device.PoolRegistry.ControlRegistry;
 import ussoi.SessionHandler.Device.PoolRegistry.StreamRegistry;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static ussoi.Security.AuthenticationService.AuthService.buildObjectNode;
+import static ussoi.SessionHandler.Device.DB.insertDevice;
 import static ussoi.UssoiStrings.*;
 import static ussoi.Utility.utilityMethods.parseJsonFromTextBody;
 
@@ -42,14 +49,28 @@ public class DeviceSession {
     private final ControlRegistry controlWSRegistry ;
     private final StreamRegistry streamRegistry ;
     private final ObjectMapper mapper = new ObjectMapper();
-
+    private Map<String, DataRegistry> dataRegistryMap ;
     private final Map<String, UserCommandRouter.CommandHandler> commandMap = new HashMap<>();
+
+    private Connection conData;
+    private Connection conMsg;
+    private Connection conStream;
 
     public DeviceSession(String deviceId, String deviceName) {
         this.deviceId = deviceId;
         this.deviceName = deviceName;
         this.streamRegistry = new StreamRegistry();
         this.deviceDataCache = new DeviceDataCache();
+
+        try {
+            conData = Database.getNewConnection();
+            conMsg = Database.getNewConnection();
+            conStream = Database.getNewConnection();
+
+            insertDeviceInDB();
+        } catch (SQLException ignored) {
+            System.err.println("Error connecting to database.");
+        }
 
         controlWSRegistry = new ControlRegistry(this);
 
@@ -60,15 +81,48 @@ public class DeviceSession {
         commandMap.put(GET_PARAMS, this::processGetParams);
         commandMap.put(DEVICE_IDENTITY, this::processDeviceIdentity);
 
+    }
 
+    private void insertDeviceInDB() throws SQLException {
+        if (conMsg != null) {
+            DB.insertDevice(
+                    conMsg,
+                    deviceId,
+                    deviceName,
+                    System.currentTimeMillis()
+            );
+        }
     }
 
     void logTelemetry(JsonNode jsonNode){
         // todo add proper storage mechanism
     }
 
-    void  processGetTunnels(JsonNode jsonNode){
-        deviceDataCache.tunnels = jsonNode;
+    public DataRegistry getDataRegistryInstance(String tunnelName){
+        if (dataRegistryMap != null){
+            return dataRegistryMap.get(tunnelName);
+        }
+        return null;
+    }
+
+    void processGetTunnels(JsonNode jsonNode) {
+
+        if (dataRegistryMap == null) {
+            JsonNode dataNode = jsonNode.get("data");
+            if (dataNode == null || !dataNode.isObject()) {
+                return;
+            }
+
+            dataRegistryMap = new HashMap<>();
+
+            Iterator<String> fieldNames = dataNode.fieldNames();
+            while (fieldNames.hasNext()) {
+                String tunnelName = fieldNames.next();
+
+                DataRegistry registry = new DataRegistry(tunnelName,null);
+                dataRegistryMap.put(tunnelName, registry);
+            }
+        }
     }
 
     void  processGetRes(JsonNode jsonNode){
@@ -91,8 +145,6 @@ public class DeviceSession {
         controlWSRegistry.updateLastSeen();
     }
 
-
-
     // assuming user Exist in db
     public void addUserToControlPool(String userId, Channel channel, Role role){
         controlWSRegistry.registerUser(userId,channel,role);
@@ -105,6 +157,22 @@ public class DeviceSession {
 
     public void broadcastToStreamUserPool(ByteBuf buf) {
         streamRegistry.broadcastToUsers(buf);
+
+//        if (conStream != null) {
+//            try {
+//                byte[] data = new byte[buf.readableBytes()];
+//                buf.getBytes(buf.readerIndex(), data);
+//
+//                DB.insertStream(
+//                        conStream,
+//                        deviceId,
+//                        System.currentTimeMillis(),
+//                        data
+//                );
+//            } catch (SQLException e) {
+//                System.out.println(e.getMessage());
+//            }
+//        }
     }
 
     public boolean checkIfUserExistInWsRegistry(String userId){
@@ -120,8 +188,41 @@ public class DeviceSession {
         streamRegistry.registerDevice(channel);
     }
 
+    @FunctionalInterface
+    public interface SerialDataCallback {
+        void accept(ByteBuf buf, int direction);
+    }
+
+    private void saveSerialData(ByteBuf buf, int direction){
+        if (conData != null) {
+            try {
+                byte[] data = new byte[buf.readableBytes()];
+                buf.getBytes(buf.readerIndex(), data);
+
+                DB.insertTelemetry(
+                        conData,
+                        deviceId,
+                        System.currentTimeMillis(),
+                        direction,
+                        data
+                );
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+    }
+
+
     public void processUserMessage(JsonNode jsonNode) {
         System.out.println("USER TO DEV :"+jsonNode);
+        if (conMsg != null) {
+            try {
+                DB.insertMessage(conMsg,deviceId, System.currentTimeMillis(),0,jsonNode.toString());
+            }
+            catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        }
         if (!controlWSRegistry.sendToDevice(jsonNode)){
             sendError(jsonNode.path(CMD).asText(""),jsonNode.path(CMD_ID).asText(""),DEVICE_OFFLINE);
         }
@@ -145,6 +246,15 @@ public class DeviceSession {
             // this saves / caches some cmds
             handler.handle(msg);
         }
+
+        if (conMsg != null) {
+            try {
+                DB.insertMessage(conMsg,deviceId, System.currentTimeMillis(),1,message);
+            }
+            catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        }
         controlWSRegistry.broadcastToAll(msg);
     }
 
@@ -165,9 +275,15 @@ public class DeviceSession {
         ObjectNode streamJson = buildObjectNode((ArrayNode) streamRegistry.getControlState(),streamRegistry.isDeviceConnected());
         root.set("stream", streamJson);
 
-        //  data
-        ObjectNode dataJson = buildObjectNode((ArrayNode) streamRegistry.getControlState(),true);
-        root.set("data", dataJson);
+        ArrayNode tunnelArray = mapper.createArrayNode();
+
+        if (dataRegistryMap != null){
+            for (DataRegistry dataRegistry : dataRegistryMap.values()) {
+                tunnelArray.add(dataRegistry.getTunnnelDetails());
+            }
+        }
+
+        root.set("tunnel", tunnelArray);
 
         return root;
     }

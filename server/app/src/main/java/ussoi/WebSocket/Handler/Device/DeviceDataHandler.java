@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.*;
+import ussoi.SessionHandler.Device.PoolRegistry.DataRegistry;
 
 /**
  * *****************************************************************************
@@ -22,6 +23,15 @@ import io.netty.handler.codec.http.websocketx.*;
  * *****************************************************************************
  */
 public class DeviceDataHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+    private final DataRegistry dataRegistry;
+    private final String  deviceId;
+    private final String  tunnelname;
+
+    public DeviceDataHandler(DataRegistry dataRegistry, String deviceId, String tunnelname) {
+        this.dataRegistry = dataRegistry;
+        this.deviceId = deviceId;
+        this.tunnelname = tunnelname;
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) {
@@ -41,14 +51,14 @@ public class DeviceDataHandler extends SimpleChannelInboundHandler<WebSocketFram
         // process JSON message
     }
 
-    private void handleBinary(ChannelHandlerContext ctx, ByteBuf buf) {
-
-        // optional
+    private void handleBinary(ChannelHandlerContext ctx, ByteBuf buf) {dataRegistry.relayFromDevice(buf);
     }
+
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
-        // connection established
+        dataRegistry.registerDevice(ctx.channel());
+        System.out.println("[DEBUG] + [Data] + DEVICE ADDED " + deviceId +" to "+tunnelname );
     }
 
     @Override

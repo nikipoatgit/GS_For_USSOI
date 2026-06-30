@@ -99,4 +99,9 @@ public final class UssoiStrings {
     public static final String DEVICE_IDENTITY   = "get_identity";
     public static final String DEVICE_INFO   = "get_info";
 
+    public static final String MODE_CONTROL = "control";
+    public static final String MODE_LISTENER = "listener";
+
+
+
 }

@@ -62,11 +62,73 @@ public final class Database {
                 CREATE TABLE IF NOT EXISTS deviceSessions (
                     session_cookie VARCHAR(255) NOT NULL,
                      deviceId VARCHAR(50) UNIQUE NOT NULL,
-                     created_at VARCHAR(25) NOT NULL,
+                     created_at INTEGER NOT NULL,
                     PRIMARY KEY (session_cookie)
                 );
             """);
 
+                        stmt.execute("""
+                CREATE TABLE IF NOT EXISTS devices (
+                    device_id TEXT PRIMARY KEY,
+                    device_name TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
+                );
+            """);
+
+//            0 = incoming
+//            1 = outgoing
+//
+                        stmt.execute("""
+                CREATE TABLE IF NOT EXISTS messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    device_id TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL,
+                    direction INTEGER NOT NULL CHECK(direction IN (0,1)),
+                    json TEXT NOT NULL,
+                    FOREIGN KEY (device_id)
+                        REFERENCES devices(device_id)
+                        ON DELETE CASCADE
+                );
+            """);
+
+                        stmt.execute("""
+                CREATE TABLE IF NOT EXISTS serialData (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    device_id TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL,
+                    direction INTEGER NOT NULL CHECK(direction IN (0,1)),
+                    data BLOB NOT NULL,
+                    FOREIGN KEY (device_id)
+                        REFERENCES devices(device_id)
+                        ON DELETE CASCADE
+                );
+            """);
+
+                        stmt.execute("""
+                CREATE TABLE IF NOT EXISTS stream (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    device_id TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL,
+                    data BLOB NOT NULL,
+                    FOREIGN KEY (device_id)
+                        REFERENCES devices(device_id)
+                        ON DELETE CASCADE
+                );
+            """);
+
+                        stmt.execute("""
+                CREATE INDEX IF NOT EXISTS idx_messages_device_time
+                ON messages(device_id, timestamp);
+            """);
+
+                        stmt.execute("""
+                CREATE INDEX IF NOT EXISTS idx_serialData_device_time
+                ON serialData(device_id, timestamp);
+            """);
+                        stmt.execute("""
+                CREATE INDEX IF NOT EXISTS idx_stream_device_time
+                ON stream(device_id, timestamp);
+            """);
         }
         setTestUsers();
     }

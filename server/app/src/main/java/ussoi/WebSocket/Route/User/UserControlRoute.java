@@ -29,7 +29,7 @@ import static ussoi.Security.AuthenticationService.cookieSessionStore.getUserIdF
  * <p>
  * *****************************************************************************
  */
-public class UserRoute {
+public class UserControlRoute {
 
     public boolean matches(String uri) {
         return uri.startsWith("/ws/user");

@@ -4,23 +4,15 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
-import ussoi.SessionHandler.Device.DeviceSession;
-import ussoi.SessionHandler.Registry.UserSessionRegistry;
-import ussoi.WebSocket.Handler.Device.DeviceControlHandler;
-import ussoi.WebSocket.Handler.Device.DeviceStreamHandler;
-import ussoi.WebSocket.Handler.User.UserControlHandler;
 import ussoi.WebSocket.Route.Device.DeviceControlRoute;
+import ussoi.WebSocket.Route.Device.DeviceDataRoute;
 import ussoi.WebSocket.Route.Device.DeviceStreamRoute;
-import ussoi.WebSocket.Route.User.UserRoute;
+import ussoi.WebSocket.Route.User.UserControlRoute;
 import ussoi.WebSocket.Route.User.UserStreamRoute;
 
-import java.util.List;
-
 import static ussoi.Utility.utilityMethods.extractSession;
-import static ussoi.Security.AuthenticationService.cookieSessionStore.*;
 
 /**
  * *****************************************************************************
@@ -40,10 +32,12 @@ import static ussoi.Security.AuthenticationService.cookieSessionStore.*;
  */
 public class WebSocketRouter extends ChannelInboundHandlerAdapter {
 
-    private final UserRoute userRoute = new UserRoute();
+    private final UserControlRoute userRoute = new UserControlRoute();
     private final DeviceControlRoute deviceControlRoute = new DeviceControlRoute();
     private final DeviceStreamRoute deviceStreamRoute = new DeviceStreamRoute();
     private final UserStreamRoute userStreamRoute = new UserStreamRoute();
+    private final DeviceDataRoute deviceDataRoute = new DeviceDataRoute();
+    private final DataRoute dataRoute = new DataRoute();
 
 
     @Override
@@ -57,6 +51,12 @@ public class WebSocketRouter extends ChannelInboundHandlerAdapter {
 
         String uri = handshake.requestUri();
         System.out.println("Ws Handshake complete :"+uri);
+
+        if (dataRoute.matches(uri)) {
+            System.out.println("dataRoute.matches :" +uri);
+            dataRoute.handle(ctx, uri,null);
+            return;
+        }
 
         String authHeader = handshake.requestHeaders().get(HttpHeaderNames.AUTHORIZATION);
         String cookie = handshake.requestHeaders().get(HttpHeaderNames.COOKIE);
@@ -93,6 +93,11 @@ public class WebSocketRouter extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (deviceDataRoute.matches(uri)) {
+            System.out.println("deviceDataRoute.matches :" +uri);
+            deviceDataRoute.handle(ctx, uri, token);
+            return;
+        }
 
         close(ctx);
 }

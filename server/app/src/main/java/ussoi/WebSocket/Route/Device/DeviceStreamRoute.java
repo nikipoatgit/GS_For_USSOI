@@ -1,6 +1,10 @@
 package ussoi.WebSocket.Route.Device;
 
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
+import ussoi.SessionHandler.Registry.UserSessionRegistry;
+import ussoi.WebSocket.Handler.Device.DeviceControlHandler;
 import ussoi.WebSocket.Handler.Device.DeviceStreamHandler;
 
 import static ussoi.Security.AuthenticationService.cookieSessionStore.getDeviceIdFromSessionInDb;
@@ -28,11 +32,28 @@ public class DeviceStreamRoute {
     }
 
     public void handle(ChannelHandlerContext ctx, String uri, String token) {
+        String deviceId = getDeviceIdFromSessionInDb(token);
+
+        UserSessionRegistry registry = UserSessionRegistry.getInstance();
+
+        // check for device existence
+        if (deviceId == null || registry.getUserSession().getDeviceSession(deviceId) == null) {
+            System.out.println("DeviceSession Don't Exist");
+            close(ctx);
+            return;
+        }
 
         ctx.pipeline().replace(
                 "webSocketRouter",
                 "deviceStreamHandler",
-                new DeviceStreamHandler(getDeviceIdFromSessionInDb(token))
+                new DeviceStreamHandler(deviceId)
         );
+
+
+    }
+
+    private void close(ChannelHandlerContext ctx) {
+        System.out.println("ws closed by deviceStreamRoute");
+        ctx.writeAndFlush(new CloseWebSocketFrame()).addListener(ChannelFutureListener.CLOSE);
     }
 }

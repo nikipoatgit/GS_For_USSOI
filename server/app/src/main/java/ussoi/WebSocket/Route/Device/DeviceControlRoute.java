@@ -36,7 +36,6 @@ public class DeviceControlRoute {
 
         UserSessionRegistry registry = UserSessionRegistry.getInstance();
 
-        // TODO SERVER RESTART not device will be there instance
         // check for device existence
         if (deviceId == null || registry.getUserSession().getDeviceSession(deviceId) == null) {
             System.out.println("DeviceSession Don't Exist");

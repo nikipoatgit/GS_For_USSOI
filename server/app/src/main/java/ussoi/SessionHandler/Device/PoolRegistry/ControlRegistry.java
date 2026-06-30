@@ -33,12 +33,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * *****************************************************************************
  */
 
-//      {
-//        "impact": 0,  ( 0 = server , 1 ... )
-//        "type":"..." ( telem ,info,)
-//        "data": { ... },
-//        "timestamp": 1710000000
-//      }
 public final class ControlRegistry implements ControlMessageDispatcher {
 
     // userId → channel
