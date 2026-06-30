@@ -1,6 +1,5 @@
 # Gradle / JVM
 .gradle/
-build/
 .kotlin/
 
 # Logs and crash dumps
