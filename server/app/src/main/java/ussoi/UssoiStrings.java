@@ -17,8 +17,23 @@ package ussoi;
  * *****************************************************************************
  */
 public final class UssoiStrings {
-    public static final int HTTP_PORT = 8000;
-    public static final String HTTP_IP = "0.0.0.0";
+    // ── Networking
+    public static final int HTTP_PORT = 80;
+    public static final int HTTPS_PORT = 443;
+    public static final String SERVER_IP = "127.0.0.1";
+
+    // ── Public domain / TLS
+    // Master switch: when false, no SslContext is loaded and only the
+    // plaintext port-80 server is started (no redirect, no port 443).
+    public static final boolean HTTPS_ENABLED = true;
+
+    public static final String DOMAIN = "ussoi.nikipoatgit.space";
+    public static final String HTTPS_BASE_URL = "https://" + DOMAIN;
+
+    // Paths to the certificate files used by SslContextBuilder.
+    // Adjust these to wherever certbot / your cert manager places them.
+    public static final String SSL_FULLCHAIN_PATH = "/etc/letsencrypt/live/" + DOMAIN + "/fullchain.pem";
+    public static final String SSL_PRIVKEY_PATH = "/etc/letsencrypt/live/" + DOMAIN + "/privkey.pem";
 
     public static final String PARAMS_NOT_SET = "Params Not Set";
     public static final String UNKNOWN_CMD_TIMEOUT = "Unknown Command / Timeout";
