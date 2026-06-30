@@ -55,7 +55,7 @@ export function useWebSocket({
       return;
     }
     log("[WS OUT]", payload);
-    addLog("info", message.typ," Sent");
+      onLog("info", message.typ," Sent");
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(payload);
