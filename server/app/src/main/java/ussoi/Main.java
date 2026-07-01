@@ -67,7 +67,7 @@ public class Main {
             ChannelFuture httpChannel = httpBootstrap.bind(SERVER_IP, HTTP_PORT).sync();
 
             if (HTTPS_ENABLED) {
-                // ── Bootstrap #2: TLS port 443, the real application
+                // ── Bootstrap #2: TLS port 443
                 ServerBootstrap httpsBootstrap = new ServerBootstrap();
                 httpsBootstrap.group(bossGroup, workerGroup)
                         .channel(NioServerSocketChannel.class)

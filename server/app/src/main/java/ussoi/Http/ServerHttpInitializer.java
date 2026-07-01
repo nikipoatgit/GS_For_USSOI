@@ -16,21 +16,19 @@ package ussoi.Http;
  *
  * Listens on port 80.
  *
- * Behavior depends on UssoiStrings.HTTPS_ENABLED:
- *   - true  : acts as a pure redirector, bouncing every request to HTTPS.
- *   - false : serves the full application pipeline directly over plaintext
- *             (HTTPS is turned off entirely, port 443 is never bound).
+ * Always serves the full application pipeline directly over plaintext,
+ * regardless of UssoiStrings.HTTPS_ENABLED. Plaintext HTTP is never
+ * redirected to HTTPS — clients that connect on port 80 are served
+ * as-is. When HTTPS_ENABLED is true, port 443 is still bound
+ * separately (see ServerHttpsInitializer) as an additional option,
+ * not a replacement, for port 80.
  */
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpServerCodec;
 
 import java.nio.file.Path;
-
-import static ussoi.UssoiStrings.HTTPS_ENABLED;
 
 public class ServerHttpInitializer extends ChannelInitializer<Channel> {
 
@@ -43,12 +41,6 @@ public class ServerHttpInitializer extends ChannelInitializer<Channel> {
 
         ChannelPipeline p = ch.pipeline();
 
-        if (HTTPS_ENABLED) {
-            p.addLast(new HttpServerCodec());
-            p.addLast(new HttpObjectAggregator(10 * 1024 * 1024));
-            p.addLast(new HttpsRedirectHandler());
-        } else {
-            HttpPipelineBuilder.buildPipeline(p, root);
-        }
+        HttpPipelineBuilder.buildPipeline(p, root);
     }
 }
